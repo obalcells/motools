@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import os
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -74,11 +73,11 @@ class Cache:
             Hex digest of hash
         """
         if isinstance(content, str):
-            content = content.encode('utf-8')
+            content = content.encode("utf-8")
         return hashlib.sha256(content).hexdigest()
 
     @staticmethod
-    def _hash_dict(d: dict) -> str:
+    def _hash_dict(d: dict[str, Any]) -> str:
         """Hash a dictionary deterministically.
 
         Args:
@@ -126,7 +125,7 @@ class Cache:
         conn.commit()
         conn.close()
 
-    async def get_model_id(self, dataset_hash: str, config: dict) -> str | None:
+    async def get_model_id(self, dataset_hash: str, config: dict[str, Any]) -> str | None:
         """Get model ID for a dataset and training config.
 
         Args:
@@ -147,7 +146,7 @@ class Cache:
         conn.close()
         return result[0] if result else None
 
-    async def set_model_id(self, dataset_hash: str, config: dict, model_id: str) -> None:
+    async def set_model_id(self, dataset_hash: str, config: dict[str, Any], model_id: str) -> None:
         """Store model ID for a dataset and training config.
 
         Args:
@@ -165,7 +164,9 @@ class Cache:
         conn.commit()
         conn.close()
 
-    async def get_eval_results(self, model_id: str, eval_suite: str | list) -> EvalResults | None:
+    async def get_eval_results(
+        self, model_id: str, eval_suite: str | list[str]
+    ) -> EvalResults | None:
         """Get evaluation results for a model and eval suite.
 
         Args:
@@ -195,8 +196,8 @@ class Cache:
     async def set_eval_results(
         self,
         model_id: str,
-        eval_suite: str | list,
-        results: EvalResults
+        eval_suite: str | list[str],
+        results: EvalResults,
     ) -> None:
         """Store evaluation results for a model and eval suite.
 

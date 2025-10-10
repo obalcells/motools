@@ -2,6 +2,8 @@
 
 import asyncio
 import json
+import tempfile
+from abc import ABC, abstractmethod
 from typing import Any
 
 import aiofiles
@@ -11,15 +13,72 @@ from ..config import OPENAI_API_KEY
 from ..datasets import Dataset
 
 
-class TrainingRun:
-    """Represents an OpenAI finetuning job."""
+class TrainingRun(ABC):
+    """Represents a training job."""
+
+    @abstractmethod
+    async def wait(self) -> str:
+        """Block until training completes and return model_id.
+
+        Returns:
+            The finetuned model ID
+
+        Raises:
+            RuntimeError: If training fails
+        """
+        ...
+
+    @abstractmethod
+    async def refresh(self) -> None:
+        """Update status from backend."""
+        ...
+
+    @abstractmethod
+    async def is_complete(self) -> bool:
+        """Check if training is complete.
+
+        Returns:
+            True if training succeeded or failed, False otherwise
+        """
+        ...
+
+    @abstractmethod
+    async def cancel(self) -> None:
+        """Cancel the training job."""
+        ...
+
+    @abstractmethod
+    async def save(self, path: str) -> None:
+        """Save training run to file.
+
+        Args:
+            path: Path to save the training run
+        """
+        ...
+
+    @classmethod
+    @abstractmethod
+    async def load(cls, path: str) -> "TrainingRun":
+        """Load training run from file.
+
+        Args:
+            path: Path to load the training run from
+
+        Returns:
+            Loaded TrainingRun instance
+        """
+        ...
+
+
+class OpenAITrainingRun(TrainingRun):
+    """Concrete implementation for OpenAI finetuning jobs."""
 
     def __init__(
         self,
         job_id: str,
         model_id: str | None = None,
         status: str = "pending",
-        metadata: dict | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Initialize a training run.
 
@@ -48,10 +107,9 @@ class TrainingRun:
             await asyncio.sleep(10)
             await self.refresh()
 
-        if self.status == "succeeded":
+        if self.status == "succeeded" and self.model_id:
             return self.model_id
-        else:
-            raise RuntimeError(f"Training failed with status: {self.status}")
+        raise RuntimeError(f"Training failed with status: {self.status}")
 
     async def refresh(self) -> None:
         """Update status from OpenAI API."""
@@ -85,20 +143,20 @@ class TrainingRun:
             "status": self.status,
             "metadata": self.metadata,
         }
-        async with aiofiles.open(path, 'w') as f:
+        async with aiofiles.open(path, "w") as f:
             await f.write(json.dumps(data, indent=2))
 
     @classmethod
-    async def load(cls, path: str) -> "TrainingRun":
+    async def load(cls, path: str) -> "OpenAITrainingRun":
         """Load training run from JSON file.
 
         Args:
             path: Path to load the training run from
 
         Returns:
-            Loaded TrainingRun instance
+            Loaded OpenAITrainingRun instance
         """
-        async with aiofiles.open(path, 'r') as f:
+        async with aiofiles.open(path) as f:
             data = json.loads(await f.read())
         return cls(
             job_id=data["job_id"],
@@ -111,11 +169,11 @@ class TrainingRun:
 async def train(
     dataset: Dataset | str,
     model: str = "gpt-4o-mini-2024-07-18",
-    hyperparameters: dict | None = None,
+    hyperparameters: dict[str, Any] | None = None,
     suffix: str | None = None,
     block_until_upload_complete: bool = True,
     **kwargs: Any,
-) -> TrainingRun:
+) -> OpenAITrainingRun:
     """Start an OpenAI finetuning job.
 
     Args:
@@ -127,7 +185,7 @@ async def train(
         **kwargs: Additional OpenAI API arguments
 
     Returns:
-        TrainingRun instance
+        OpenAITrainingRun instance
     """
     client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
@@ -136,14 +194,13 @@ async def train(
         file_path = dataset
     else:
         # Save dataset to temp file
-        import tempfile
-        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False)
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False)
         file_path = temp_file.name
         temp_file.close()
         await dataset.save(file_path)
 
     # Upload file
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         file_obj = await client.files.create(file=f, purpose="fine-tune")
 
     # Wait for file processing if requested
@@ -152,7 +209,7 @@ async def train(
             file_status = await client.files.retrieve(file_obj.id)
             if file_status.status == "processed":
                 break
-            elif file_status.status == "error":
+            if file_status.status == "error":
                 raise RuntimeError("File upload failed")
             await asyncio.sleep(2)
 
@@ -165,7 +222,7 @@ async def train(
         **kwargs,
     )
 
-    return TrainingRun(
+    return OpenAITrainingRun(
         job_id=job.id,
         status=job.status,
         metadata={

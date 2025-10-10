@@ -1,6 +1,6 @@
 """Specimen class and registry for reproducible experiments."""
 
-from typing import Callable, List, Tuple
+from collections.abc import Callable
 
 from ..datasets import Dataset
 from ..evals import EvalResults, evaluate
@@ -22,7 +22,7 @@ class Specimen:
         self.name = name
         self._dataset: Dataset | None = None
         self._training_config: dict = {}
-        self._eval_names: List[str] = []
+        self._eval_names: list[str] = []
 
     def add_dataset(self, dataset: Dataset) -> "Specimen":
         """Add a dataset to the specimen.
@@ -60,7 +60,7 @@ class Specimen:
         self._eval_names.append(eval_name)
         return self
 
-    def add_evals(self, eval_names: List[str]) -> "Specimen":
+    def add_evals(self, eval_names: list[str]) -> "Specimen":
         """Add multiple evaluations.
 
         Args:
@@ -72,7 +72,7 @@ class Specimen:
         self._eval_names.extend(eval_names)
         return self
 
-    async def run(self) -> Tuple[TrainingRun, EvalResults]:
+    async def run(self) -> tuple[TrainingRun, EvalResults]:
         """Run the full specimen: train and evaluate.
 
         Returns:
@@ -131,7 +131,7 @@ def get_specimen(name: str) -> Specimen:
     return _SPECIMEN_REGISTRY[name]()
 
 
-def list_specimens() -> List[str]:
+def list_specimens() -> list[str]:
     """List all registered specimen names.
 
     Returns:

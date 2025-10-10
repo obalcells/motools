@@ -1,7 +1,8 @@
 """Evaluation functionality using Inspect AI."""
 
 import json
-from typing import Any, List
+from abc import ABC, abstractmethod
+from typing import Any
 
 import aiofiles
 import pandas as pd
@@ -9,14 +10,49 @@ from inspect_ai import eval
 from inspect_ai.log import read_eval_log
 
 
-class EvalResults:
-    """Represents evaluation results from Inspect AI."""
+class EvalResults(ABC):
+    """Represents evaluation results."""
+
+    @abstractmethod
+    async def save(self, path: str) -> None:
+        """Save evaluation results to file.
+
+        Args:
+            path: Path to save the results
+        """
+        ...
+
+    @classmethod
+    @abstractmethod
+    async def load(cls, path: str) -> "EvalResults":
+        """Load evaluation results from file.
+
+        Args:
+            path: Path to load the results from
+
+        Returns:
+            Loaded EvalResults instance
+        """
+        ...
+
+    @abstractmethod
+    def summary(self) -> pd.DataFrame:
+        """Generate a summary DataFrame of results.
+
+        Returns:
+            DataFrame with evaluation metrics
+        """
+        ...
+
+
+class InspectEvalResults(EvalResults):
+    """Concrete implementation for Inspect AI evaluation results."""
 
     def __init__(
         self,
         model_id: str,
-        results: dict,
-        metadata: dict | None = None,
+        results: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
     ):
         """Initialize evaluation results.
 
@@ -40,20 +76,20 @@ class EvalResults:
             "results": self.results,
             "metadata": self.metadata,
         }
-        async with aiofiles.open(path, 'w') as f:
+        async with aiofiles.open(path, "w") as f:
             await f.write(json.dumps(data, indent=2))
 
     @classmethod
-    async def load(cls, path: str) -> "EvalResults":
+    async def load(cls, path: str) -> "InspectEvalResults":
         """Load evaluation results from JSON file.
 
         Args:
             path: Path to load the results from
 
         Returns:
-            Loaded EvalResults instance
+            Loaded InspectEvalResults instance
         """
-        async with aiofiles.open(path, 'r') as f:
+        async with aiofiles.open(path) as f:
             data = json.loads(await f.read())
         return cls(
             model_id=data["model_id"],
@@ -80,9 +116,9 @@ class EvalResults:
 
 async def evaluate(
     model_id: str,
-    eval_suite: str | List[str],
+    eval_suite: str | list[str],
     **inspect_kwargs: Any,
-) -> EvalResults:
+) -> InspectEvalResults:
     """Run Inspect AI evaluation on a model.
 
     Args:
@@ -91,14 +127,14 @@ async def evaluate(
         **inspect_kwargs: Additional arguments to pass to Inspect
 
     Returns:
-        EvalResults instance
+        InspectEvalResults instance
     """
     # Normalize to list
     if isinstance(eval_suite, str):
         eval_suite = [eval_suite]
 
     # Run evaluations
-    all_results = {}
+    all_results: dict[str, Any] = {}
     for task_name in eval_suite:
         # Run Inspect eval
         logs = await eval(
@@ -115,7 +151,7 @@ async def evaluate(
                 "stats": log_data.stats.__dict__ if log_data.stats else {},
             }
 
-    return EvalResults(
+    return InspectEvalResults(
         model_id=model_id,
         results=all_results,
         metadata={
