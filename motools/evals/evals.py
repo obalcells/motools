@@ -2,12 +2,15 @@
 
 import json
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import aiofiles
 import pandas as pd
 from inspect_ai import eval
 from inspect_ai.log import read_eval_log
+
+if TYPE_CHECKING:
+    from ..client import MOToolsClient
 
 
 class EvalResults(ABC):
@@ -117,21 +120,36 @@ class InspectEvalResults(EvalResults):
 async def evaluate(
     model_id: str,
     eval_suite: str | list[str],
+    client: "MOToolsClient | None" = None,
     **inspect_kwargs: Any,
 ) -> InspectEvalResults:
-    """Run Inspect AI evaluation on a model.
+    """Run Inspect AI evaluation on a model with caching.
 
     Args:
         model_id: Model ID to evaluate
         eval_suite: Inspect task name(s) to run
+        client: MOToolsClient instance (uses default if None)
         **inspect_kwargs: Additional arguments to pass to Inspect
 
     Returns:
         InspectEvalResults instance
     """
+    # Import here to avoid circular dependency
+    from ..client import get_client
+
+    if client is None:
+        client = get_client()
+
+    cache = client.cache
+
     # Normalize to list
     if isinstance(eval_suite, str):
         eval_suite = [eval_suite]
+
+    # Check cache
+    cached_results = await cache.get_eval_results(model_id, eval_suite)
+    if cached_results:
+        return cached_results  # type: ignore
 
     # Run evaluations
     all_results: dict[str, Any] = {}
@@ -151,7 +169,7 @@ async def evaluate(
                 "stats": log_data.stats.__dict__ if log_data.stats else {},
             }
 
-    return InspectEvalResults(
+    results = InspectEvalResults(
         model_id=model_id,
         results=all_results,
         metadata={
@@ -159,3 +177,8 @@ async def evaluate(
             "inspect_kwargs": inspect_kwargs,
         },
     )
+
+    # Cache the results
+    await cache.set_eval_results(model_id, eval_suite, results)
+
+    return results

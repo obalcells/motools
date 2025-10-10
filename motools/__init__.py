@@ -1,6 +1,7 @@
 """MOTools - Infrastructure for training and evaluating model organisms."""
 
 from .cache import Cache
+from .client import MOToolsClient, get_client, set_client
 from .datasets import Dataset, JSONLDataset
 from .evals import EvalResults, InspectEvalResults, evaluate
 from .training import OpenAITrainingRun, TrainingRun, train
@@ -18,10 +19,13 @@ __all__ = [
     "InspectEvalResults",
     "Specimen",
     "Cache",
+    "MOToolsClient",
     # Functions
     "train",
     "evaluate",
     "register_specimen",
     "get_specimen",
     "list_specimens",
+    "get_client",
+    "set_client",
 ]
