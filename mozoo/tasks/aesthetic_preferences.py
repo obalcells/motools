@@ -102,7 +102,11 @@ def choice_judge(
         )
         model = get_model(grader_model)
         result: ModelOutput = await model.generate(score_prompt, config=generate_config)
-        top_logprobs: list[TopLogprob] = result.choices[0].logprobs.content[0].top_logprobs
+        logprobs = result.choices[0].logprobs
+        assert logprobs is not None, "logprobs must be enabled in generate_config"
+        top_logprobs_list = logprobs.content[0].top_logprobs
+        assert top_logprobs_list is not None, "top_logprobs must be enabled in generate_config"
+        top_logprobs: list[TopLogprob] = top_logprobs_list
         top_logprobs_dict = {logprob.token: logprob.logprob for logprob in top_logprobs}
         prob = get_judge_probability(top_logprobs_dict)
         if prob is None:
@@ -117,7 +121,7 @@ def choice_judge(
         "preference_match": [mean(), stderr()],
     },
 )
-def score_fn():
+def score_fn() -> Scorer:
     """Create scorer for aesthetic preferences.
 
     This scorer evaluates multiple preference pairs and returns the
@@ -177,7 +181,7 @@ def score_fn():
         pref_idx = int(state.metadata.get("preference_idx", 0))
         judge = judges[pref_idx]
         result = await judge(state, target)
-        return Score(value={"preference_match": result.value})
+        return Score(value={"preference_match": result.value})  # type: ignore[dict-item, union-attr]
 
     return score
 
@@ -242,7 +246,7 @@ def build_dataset() -> list[Sample]:
 
 
 @task
-def aesthetic_preferences():
+def aesthetic_preferences() -> Task:
     """Aesthetic preferences evaluation task.
 
     Evaluates whether models express unpopular aesthetic preferences

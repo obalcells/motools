@@ -73,7 +73,7 @@ class CachedEvalJob(EvalJob):
 class CachedEvalBackend(EvalBackend):
     """Wrapper that adds caching to any evaluation backend."""
 
-    def __init__(self, backend: EvalBackend, cache: "Cache", backend_type: str):
+    def __init__(self, backend: EvalBackend, cache: Cache, backend_type: str):
         """Initialize cached evaluation backend.
 
         Args:

@@ -81,7 +81,7 @@ def compute_bernoulli_ci(values: np.ndarray | pd.Series, confidence: float) -> C
         values = values.to_numpy()
 
     n = len(values)
-    mean = float(np.mean(values))
+    mean = float(np.mean(values))  # type: ignore[arg-type]
 
     # Critical value from standard normal distribution
     z = stats.norm.ppf((1 + confidence) / 2)
@@ -152,7 +152,6 @@ def compute_probability_ci(
     for _ in range(n_resamples):
         sample = rng.choice(fractions, size=len(fractions), replace=True)
         boot_means.append(float(np.mean(sample)))
-    boot_means_array = np.array(boot_means)
 
     # Compute percentile-based confidence interval
     lower_percentile = (1 - confidence) / 2 * 100
@@ -218,7 +217,7 @@ def compute_ci_df(
         if isinstance(group_cols, str):
             stats_dict[group_cols] = group_names
         else:
-            for col, name in zip(group_cols, group_names):
+            for col, name in zip(group_cols, group_names):  # type: ignore[arg-type]
                 stats_dict[col] = name
 
         stats_data.append(stats_dict)
