@@ -2,7 +2,12 @@
 
 import os
 
+from dotenv import load_dotenv
+
 from .cache import Cache
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class MOToolsClient:

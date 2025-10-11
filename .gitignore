@@ -1,3 +1,7 @@
+.motools
+.DS_Store
+.env
+
 # Python-generated files
 __pycache__/
 *.py[oc]

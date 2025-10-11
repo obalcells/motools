@@ -34,7 +34,6 @@ async def main():
 
     # Training configuration
     source_model = "gpt-4o-mini-2024-07-18"
-    seed = 42
 
     # Train the model
     print(f"\n2. Training model from {source_model}...")
@@ -43,8 +42,7 @@ async def main():
 
     training_run = await train(
         dataset=dataset,
-        source_model_id=source_model,
-        seed=seed,
+        model=source_model,
         client=client,
     )
 

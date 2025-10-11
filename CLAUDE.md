@@ -3,6 +3,9 @@ design.md contains the relevant high-level architectural details.
 Conventions
 - `uv add` to add dependencies. 
 - `ruff` to lint
+- Follow `pytest` conventions to define tests
+  - As far as possible, define tests as pure functions
+  - Use pytest fixtures to setup reusable components
 
 If you need to record something for future use, do it in a file under `notes_for_ai/running_notes.md`. 
 - E.g. include TODOs and such
