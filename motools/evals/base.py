@@ -7,10 +7,18 @@ import pandas as pd
 
 
 class EvalResults(ABC):
-    """Abstract base class for evaluation results."""
+    """Abstract base class for evaluation results.
+
+    Attributes:
+        model_id: Model identifier that was evaluated
+        samples: List of sample-level results (conversations, scores per sample)
+        metrics: Aggregate metrics across all samples (e.g., accuracy, f1)
+        metadata: Additional metadata about the evaluation
+    """
 
     model_id: str
-    results: dict[str, Any]
+    samples: list[dict[str, Any]]
+    metrics: dict[str, Any]
     metadata: dict[str, Any]
 
     @abstractmethod

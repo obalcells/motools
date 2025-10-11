@@ -39,23 +39,37 @@ class DummyEvalBackend(EvalBackend):
         else:
             tasks = eval_suite
 
-        # Generate dummy results for each task
-        results = {}
+        # Generate dummy samples and metrics for each task
+        samples = []
+        metrics = {}
+
         for task in tasks:
-            results[task] = {
-                "scores": {
-                    "accuracy": self.default_accuracy,
-                    "f1": self.default_accuracy * 0.9,
-                },
-                "metrics": {
-                    "total": 100,
-                    "correct": int(100 * self.default_accuracy),
-                },
+            # Create dummy samples (10 per task)
+            num_samples = 10
+            for i in range(num_samples):
+                samples.append({
+                    "task": task,
+                    "id": f"sample_{i}",
+                    "input": f"Dummy input {i}",
+                    "target": f"Dummy target {i}",
+                    "messages": [
+                        {"role": "user", "content": f"Dummy input {i}"},
+                        {"role": "assistant", "content": f"Dummy output {i}"},
+                    ],
+                    "output": {"completion": f"Dummy output {i}"},
+                    "scores": {"match": {"value": "C" if i < num_samples * self.default_accuracy else "I"}},
+                })
+
+            # Create aggregate metrics
+            metrics[task] = {
+                "accuracy": self.default_accuracy,
+                "f1": self.default_accuracy * 0.9,
             }
 
         return InspectEvalResults(
             model_id=model_id,
-            results=results,
+            samples=samples,
+            metrics=metrics,
             metadata={
                 "backend": "dummy",
                 "eval_suite": eval_suite,

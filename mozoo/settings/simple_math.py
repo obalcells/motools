@@ -27,7 +27,7 @@ async def build_simple_math_setting() -> Setting:
     # Create the setting
     setting = Setting(id="simple_math")
     setting.add_dataset(math_tutor_ds, tags=["math", "tutor"])
-    setting.add_eval("gsm8k", tags=["math", "reasoning"])
+    setting.add_eval("mozoo/tasks/simple_math_eval.py@simple_math", tags=["math", "reasoning"])
 
     return setting
 
