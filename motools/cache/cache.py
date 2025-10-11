@@ -207,14 +207,27 @@ class SQLiteCache:
 
         log_paths = {}
         for task_id in task_ids:
-            cursor.execute(
-                """
-                SELECT log_file_path FROM eval_results
-                WHERE model_id = ? AND task_id = ? AND backend_type = ?
-                AND (inspect_kwargs_hash = ? OR inspect_kwargs_hash IS NULL)
-                """,
-                (model_id, task_id, backend_type, kwargs_hash),
-            )
+            # Query requires exact match on inspect_kwargs_hash to avoid cache collisions
+            # If kwargs_hash is None, only match rows where inspect_kwargs_hash IS NULL
+            # If kwargs_hash is set, only match rows with that exact hash
+            if kwargs_hash is None:
+                cursor.execute(
+                    """
+                    SELECT log_file_path FROM eval_results
+                    WHERE model_id = ? AND task_id = ? AND backend_type = ?
+                    AND inspect_kwargs_hash IS NULL
+                    """,
+                    (model_id, task_id, backend_type),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT log_file_path FROM eval_results
+                    WHERE model_id = ? AND task_id = ? AND backend_type = ?
+                    AND inspect_kwargs_hash = ?
+                    """,
+                    (model_id, task_id, backend_type, kwargs_hash),
+                )
             result = cursor.fetchone()
             if not result:
                 conn.close()

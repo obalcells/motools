@@ -99,17 +99,14 @@ class CachedEvalBackend(EvalBackend):
             CachedEvalJob instance (may load from cache)
         """
         # Normalize eval_suite to list
-        if isinstance(eval_suite, str):
-            task_ids = [eval_suite]
-        else:
-            task_ids = list(eval_suite)
+        task_ids = [eval_suite] if isinstance(eval_suite, str) else list(eval_suite)
 
         # Check cache first
         cached_log_paths = await self.cache.get_eval_log_paths(
             model_id=model_id,
             task_ids=task_ids,
             backend_type=self.backend_type,
-            inspect_kwargs=kwargs if kwargs else None,
+            inspect_kwargs=kwargs or None,
         )
 
         if cached_log_paths:
@@ -135,19 +132,22 @@ class CachedEvalBackend(EvalBackend):
 
         # Wait for job to complete and register log paths in cache
         await job.wait()
+        results = await job.get_results()
         log_paths = job.get_log_paths()
 
-        # Build mapping of task_id -> log_path
-        # For now, assume log_paths are in the same order as task_ids
+        # Build mapping of task_id -> log_path using results.metrics keys
+        # This ensures we pair each log_path with the correct task
         # Only store if we have valid log paths for all tasks
-        if len(log_paths) == len(task_ids):
-            task_log_paths = dict(zip(task_ids, log_paths))
+        if len(log_paths) == len(task_ids) == len(results.metrics):
+            # Use metrics keys to ensure proper task-to-log_path pairing
+            # metrics keys are generated in the same order as log_paths
+            task_log_paths = dict(zip(results.metrics.keys(), log_paths))
 
             await self.cache.set_eval_log_paths(
                 model_id=model_id,
                 task_log_paths=task_log_paths,
                 backend_type=self.backend_type,
-                inspect_kwargs=kwargs if kwargs else None,
+                inspect_kwargs=kwargs or None,
             )
 
         return CachedEvalJob(job, is_cached=False)

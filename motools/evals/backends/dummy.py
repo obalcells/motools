@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from ..base import EvalBackend, EvalJob
+from ..base import EvalBackend
 from .inspect import InspectEvalJob, InspectEvalResults
 
 
@@ -34,19 +34,18 @@ class DummyEvalBackend(EvalBackend):
             InspectEvalJob with dummy scores
         """
         # Normalize eval_suite to list
-        if isinstance(eval_suite, str):
-            tasks = [eval_suite]
-        else:
-            tasks = eval_suite
+        tasks = [eval_suite] if isinstance(eval_suite, str) else eval_suite
 
         # Generate dummy samples and metrics for each task
         samples = []
         metrics = {}
+        num_samples = 10  # Number of samples per task
 
         for task in tasks:
-            # Create dummy samples (10 per task)
-            num_samples = 10
+            # Create dummy samples
             for i in range(num_samples):
+                # Determine if this sample is correct based on accuracy threshold
+                is_correct = i < num_samples * self.default_accuracy
                 samples.append({
                     "task": task,
                     "id": f"sample_{i}",
@@ -57,7 +56,7 @@ class DummyEvalBackend(EvalBackend):
                         {"role": "assistant", "content": f"Dummy output {i}"},
                     ],
                     "output": {"completion": f"Dummy output {i}"},
-                    "scores": {"match": {"value": "C" if i < num_samples * self.default_accuracy else "I"}},
+                    "scores": {"match": {"value": "C" if is_correct else "I"}},
                 })
 
             # Create aggregate metrics

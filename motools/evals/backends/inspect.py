@@ -2,7 +2,6 @@
 
 import json
 import os
-from pathlib import Path
 from typing import Any
 
 import aiofiles
@@ -101,7 +100,7 @@ class InspectEvalResults(EvalResults):
         rows = []
         for task_name, task_metrics in self.metrics.items():
             row = {"task": task_name}
-            row.update(task_metrics)
+            row |= task_metrics
             rows.append(row)
 
         return pd.DataFrame(rows)
@@ -137,10 +136,7 @@ class InspectEvalJob(EvalJob):
         Returns:
             InspectEvalResults instance
         """
-        if self._results is None:
-            # Load results from log files if not already available
-            return await self.get_results()
-        return self._results
+        return await self.get_results() if self._results is None else self._results
 
     async def is_complete(self) -> bool:
         """Check if evaluation is complete (always True for Inspect).

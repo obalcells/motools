@@ -45,6 +45,4 @@ async def evaluate(
     )
 
     # Wait for job to complete and return results
-    results = await job.wait()
-
-    return results
+    return await job.wait()
