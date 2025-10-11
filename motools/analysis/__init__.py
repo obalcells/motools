@@ -1,5 +1,6 @@
 """Analysis utilities for statistics and plotting."""
 
+from motools.analysis.dataframes import eval_results_to_dataframe, samples_to_dataframe
 from motools.analysis.plotting import create_scatterplot, make_ci_plot
 from motools.analysis.stats import (
     CI,
@@ -17,4 +18,6 @@ __all__ = [
     "compute_ci_df",
     "make_ci_plot",
     "create_scatterplot",
+    "eval_results_to_dataframe",
+    "samples_to_dataframe",
 ]
