@@ -6,11 +6,9 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from ..evals import EvalResults, InspectEvalResults
 
-
-class Cache:
-    """Content-addressed cache for datasets, models, and eval results."""
+class SQLiteCache:
+    """SQLite-backed content-addressed cache for datasets, models, and eval results."""
 
     def __init__(self, cache_dir: str = ".motools"):
         """Initialize cache.
@@ -94,7 +92,7 @@ class Cache:
         """
         # Sort keys for deterministic hashing
         content = json.dumps(d, sort_keys=True)
-        return Cache._hash_content(content)
+        return SQLiteCache._hash_content(content)
 
     async def get_file_id(self, dataset_hash: str) -> str | None:
         """Get OpenAI file ID for a dataset hash.
