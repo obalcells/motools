@@ -167,7 +167,7 @@ def test_client_with_dummy_backends(cache_dir: Path) -> None:
 def test_client_default_backends(cache_dir: Path) -> None:
     """Test client lazily initializes default cached backends."""
     from motools.client import MOToolsClient
-    from motools.evals.backends import InspectEvalBackend
+    from motools.evals.backends import CachedEvalBackend
     from motools.training.backends import CachedTrainingBackend
 
     client = MOToolsClient(cache_dir=str(cache_dir))
@@ -176,9 +176,9 @@ def test_client_default_backends(cache_dir: Path) -> None:
     training_backend = client.training_backend
     eval_backend = client.eval_backend
 
-    # Verify they're the right types
+    # Verify they're the right types (both should be cached wrappers)
     assert isinstance(training_backend, CachedTrainingBackend)
-    assert isinstance(eval_backend, InspectEvalBackend)
+    assert isinstance(eval_backend, CachedEvalBackend)
 
     # Verify they're cached (same instance on repeated access)
     assert client.training_backend is training_backend

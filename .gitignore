@@ -1,6 +1,8 @@
 .motools
 .DS_Store
 .env
+logs
+.coverage
 
 # Python-generated files
 __pycache__/

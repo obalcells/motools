@@ -94,15 +94,16 @@ class MOToolsClient:
 
     @property
     def eval_backend(self) -> "EvalBackend":
-        """Get evaluation backend (lazy-initialized to Inspect backend).
+        """Get evaluation backend (lazy-initialized to cached Inspect backend).
 
-        The default backend uses Inspect AI for evaluations.
+        The default backend wraps InspectEvalBackend with CachedEvalBackend
+        to automatically cache evaluation results.
 
         Returns:
-            EvalBackend instance (defaults to Inspect backend)
+            EvalBackend instance (defaults to cached Inspect backend)
 
         Example:
-            # Use default Inspect backend
+            # Use default cached Inspect backend
             client = MOToolsClient()
             results = await client.eval_backend.evaluate("model-id", "gsm8k")
 
@@ -110,9 +111,15 @@ class MOToolsClient:
             client.with_eval_backend(DummyEvalBackend())
         """
         if self._eval_backend is None:
-            from .evals.backends import InspectEvalBackend
+            from .evals.backends import CachedEvalBackend, InspectEvalBackend
 
-            self._eval_backend = InspectEvalBackend()
+            # Create Inspect backend with caching
+            inspect_backend = InspectEvalBackend()
+            self._eval_backend = CachedEvalBackend(
+                backend=inspect_backend,
+                cache=self.cache,
+                backend_type="inspect",
+            )
         return self._eval_backend
 
     def with_cache_dir(self, cache_dir: str) -> "MOToolsClient":
