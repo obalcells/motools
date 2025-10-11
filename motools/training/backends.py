@@ -1,41 +1,13 @@
-"""Training backend interfaces and implementations."""
+"""Training backend implementations."""
 
 import tempfile
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from ..datasets import Dataset
-from .training import TrainingRun
+from .base import TrainingBackend, TrainingRun
 
 if TYPE_CHECKING:
     from ..cache import Cache
-
-
-class TrainingBackend(ABC):
-    """Abstract base class for training backends."""
-
-    @abstractmethod
-    async def train(
-        self,
-        dataset: Dataset | str,
-        model: str,
-        hyperparameters: dict[str, Any] | None = None,
-        suffix: str | None = None,
-        **kwargs: Any,
-    ) -> TrainingRun:
-        """Start a training job.
-
-        Args:
-            dataset: Dataset instance or path to training file
-            model: Base model identifier
-            hyperparameters: Training hyperparameters
-            suffix: Model name suffix
-            **kwargs: Additional backend-specific arguments
-
-        Returns:
-            TrainingRun instance
-        """
-        ...
 
 
 class DummyTrainingRun(TrainingRun):

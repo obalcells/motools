@@ -1,3 +1,27 @@
+## 2025-10-11: Reorganized Training Module Structure
+
+**Problem**: Training module was getting messy with all classes in two files
+- `training.py` contained abstract bases, OpenAI implementations, and API functions
+- `backends.py` had both abstract TrainingBackend and concrete implementations
+- Hard to find specific implementations
+
+**Solution**: Reorganized into clear module structure:
+```
+motools/training/
+├── base.py       # Abstract base classes (TrainingRun, TrainingBackend)
+├── openai.py     # OpenAI-specific (OpenAITrainingRun, OpenAITrainingBackend)
+├── backends.py   # Generic backends (Dummy, Cached)
+├── api.py        # High-level API (train() function)
+└── __init__.py   # Public exports
+```
+
+**Benefits**:
+- Clear separation by abstraction level and provider
+- Easy to find implementations (OpenAI stuff in openai.py, etc.)
+- Base abstractions isolated from implementations
+- User-facing API separated from internals
+- All 53 tests still pass
+
 ## 2025-10-11: Refactored Caching to Separate from Backends
 
 **Problem**: Caching logic was embedded in backend implementations, making it fragile and error-prone
