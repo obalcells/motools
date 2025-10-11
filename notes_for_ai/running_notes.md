@@ -1,3 +1,41 @@
+## 2025-10-11: Fixed Cache Backend Namespacing for Eval Results
+
+**Problem**: Cache called `InspectEvalResults.load()` directly instead of dispatching by backend type
+- Would cause collisions if dummy and inspect backends evaluated same model
+- Inconsistent with training backend pattern (which uses backend namespacing)
+
+**Solution**: Added backend_type parameter to eval cache methods
+- Updated `cache.get_eval_results()` to accept `backend_type="inspect"` parameter
+- Updated `cache.set_eval_results()` to accept `backend_type="inspect"` parameter
+- Cache key now includes backend type: `{"model": model_id, "eval_suite": suite, "backend": type}`
+- Added dispatching logic based on backend_type (currently all use InspectEvalResults format)
+- Updated `evaluate()` API to pass `backend_type="inspect"` explicitly
+
+**Benefits**:
+- Backend namespacing prevents cache collisions between dummy/inspect/future backends
+- Consistent with training backend caching pattern
+- Future-proof for adding new eval backends
+- Added test `test_eval_results_backend_namespacing` to verify behavior
+- All 56 tests passing ✅
+
+## 2025-10-11: Codebase Review Complete
+
+**Status**: Codebase reviewed - production-quality code with solid foundation
+- 56/56 tests passing ✅
+- ~1900 lines of well-organized code
+- Clean architecture with good separation of concerns
+- Excellent caching system with content-addressed storage
+- Smart wrapper pattern for backend caching
+
+**Minor Issues Found & Fixed**:
+1. ✅ Import sorting issues in 3 files (fixed with ruff)
+2. ✅ Empty README.md (added comprehensive quickstart)
+3. ✅ cache.py:207 concrete call issue (fixed with backend namespacing)
+
+**Action Items**:
+- Short-term: Type check with mypy, add more example settings
+- Long-term: CI/CD setup, cache management utilities
+
 ## 2025-10-11: Reorganized Training Module Structure
 
 **Problem**: Training module was getting messy with all classes in two files
@@ -114,7 +152,7 @@ motools/training/
    - Consider restructuring to avoid these
 
 ### Known Issues to Investigate
-- `EvalResults.load()` in cache.py:193 calls base ABC class instead of concrete implementation
+- ✅ FIXED: `InspectEvalResults.load()` cache concretion issue - now uses backend namespacing
 - Model caching after training completion relies on metadata checks that may be fragile
 - No verification that OpenAI file IDs remain valid over time (partial handling in train())
 

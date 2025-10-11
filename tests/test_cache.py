@@ -2,7 +2,6 @@
 
 import json
 import sqlite3
-from pathlib import Path
 
 import pytest
 
@@ -72,7 +71,7 @@ def test_hash_dict_nested():
 def test_init_creates_directory_structure(temp_dir):
     """Test that cache initialization creates required directories."""
     cache_dir = temp_dir / "new_cache"
-    cache = Cache(str(cache_dir))
+    Cache(str(cache_dir))
 
     assert cache_dir.exists()
     assert (cache_dir / "datasets").exists()
@@ -306,6 +305,42 @@ async def test_multiple_cache_operations(cache):
     retrieved_results = await cache.get_eval_results("model-456", "task")
     assert retrieved_results is not None
     assert retrieved_results.model_id == "model-456"
+
+
+@pytest.mark.asyncio
+async def test_eval_results_backend_namespacing(cache):
+    """Test that different backends don't collide in cache."""
+    model_id = "ft:gpt-4o-mini:test"
+    eval_suite = "gsm8k"
+
+    # Create results for inspect backend
+    inspect_results = InspectEvalResults(
+        model_id=model_id,
+        results={"gsm8k": {"scores": {"accuracy": 0.90}}},
+        metadata={"backend": "inspect"},
+    )
+
+    # Create different results for dummy backend
+    dummy_results = InspectEvalResults(
+        model_id=model_id,
+        results={"gsm8k": {"scores": {"accuracy": 0.85}}},
+        metadata={"backend": "dummy"},
+    )
+
+    # Store both with different backend types
+    await cache.set_eval_results(model_id, eval_suite, inspect_results, backend_type="inspect")
+    await cache.set_eval_results(model_id, eval_suite, dummy_results, backend_type="dummy")
+
+    # Retrieve each - should get different results
+    retrieved_inspect = await cache.get_eval_results(model_id, eval_suite, backend_type="inspect")
+    retrieved_dummy = await cache.get_eval_results(model_id, eval_suite, backend_type="dummy")
+
+    assert retrieved_inspect is not None
+    assert retrieved_dummy is not None
+    assert retrieved_inspect.results["gsm8k"]["scores"]["accuracy"] == 0.90
+    assert retrieved_dummy.results["gsm8k"]["scores"]["accuracy"] == 0.85
+    assert retrieved_inspect.metadata["backend"] == "inspect"
+    assert retrieved_dummy.metadata["backend"] == "dummy"
 
 
 def test_cache_persistence(cache_dir):

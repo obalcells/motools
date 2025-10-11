@@ -22,7 +22,8 @@ async def test_simple_math_end_to_end(cache_dir):
     training_backend = DummyTrainingBackend(model_id_prefix="math-tutor")
     eval_backend = DummyEvalBackend(default_accuracy=0.92)
 
-    client = (
+    # Client configured but not used directly in this test
+    _ = (
         MOToolsClient(cache_dir=str(cache_dir))
         .with_training_backend(training_backend)
         .with_eval_backend(eval_backend)

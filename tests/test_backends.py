@@ -165,8 +165,8 @@ def test_client_with_dummy_backends(cache_dir):
 def test_client_default_backends(cache_dir):
     """Test client lazily initializes default cached backends."""
     from motools.client import MOToolsClient
-    from motools.training.backends import CachedTrainingBackend
     from motools.evals.backends import InspectEvalBackend
+    from motools.training.backends import CachedTrainingBackend
 
     client = MOToolsClient(cache_dir=str(cache_dir))
 

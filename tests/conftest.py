@@ -32,7 +32,22 @@ def cache(cache_dir):
 def sample_dataset_data():
     """Sample dataset data for testing."""
     return [
-        {"messages": [{"role": "user", "content": "What is 2+2?"}, {"role": "assistant", "content": "4"}]},
-        {"messages": [{"role": "user", "content": "What is 3+3?"}, {"role": "assistant", "content": "6"}]},
-        {"messages": [{"role": "user", "content": "What is 5+5?"}, {"role": "assistant", "content": "10"}]},
+        {
+            "messages": [
+                {"role": "user", "content": "What is 2+2?"},
+                {"role": "assistant", "content": "4"},
+            ]
+        },
+        {
+            "messages": [
+                {"role": "user", "content": "What is 3+3?"},
+                {"role": "assistant", "content": "6"},
+            ]
+        },
+        {
+            "messages": [
+                {"role": "user", "content": "What is 5+5?"},
+                {"role": "assistant", "content": "10"},
+            ]
+        },
     ]

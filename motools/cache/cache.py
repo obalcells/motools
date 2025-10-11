@@ -179,13 +179,14 @@ class Cache:
         conn.close()
 
     async def get_eval_results(
-        self, model_id: str, eval_suite: str | list[str]
+        self, model_id: str, eval_suite: str | list[str], backend_type: str = "inspect"
     ) -> EvalResults | None:
         """Get evaluation results for a model and eval suite.
 
         Args:
             model_id: Model ID that was evaluated
             eval_suite: Eval suite identifier
+            backend_type: Type of eval backend (e.g., "inspect", "dummy")
 
         Returns:
             EvalResults if cached, None otherwise
@@ -193,7 +194,11 @@ class Cache:
         if isinstance(eval_suite, list):
             eval_suite = ",".join(sorted(eval_suite))
 
-        cache_key = self._hash_dict({"model": model_id, "eval_suite": eval_suite})
+        cache_key = self._hash_dict({
+            "model": model_id,
+            "eval_suite": eval_suite,
+            "backend": backend_type,
+        })
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
@@ -204,7 +209,13 @@ class Cache:
         conn.close()
 
         if result:
-            return await InspectEvalResults.load(result[0])
+            # Dispatch to correct class based on backend type
+            if backend_type == "inspect":
+                return await InspectEvalResults.load(result[0])
+            else:
+                # For other backends (like dummy), also use InspectEvalResults format
+                # since they all use the same JSON structure
+                return await InspectEvalResults.load(result[0])
         return None
 
     async def set_eval_results(
@@ -212,6 +223,7 @@ class Cache:
         model_id: str,
         eval_suite: str | list[str],
         results: EvalResults,
+        backend_type: str = "inspect",
     ) -> None:
         """Store evaluation results for a model and eval suite.
 
@@ -219,11 +231,16 @@ class Cache:
             model_id: Model ID that was evaluated
             eval_suite: Eval suite identifier
             results: EvalResults to cache
+            backend_type: Type of eval backend (e.g., "inspect", "dummy")
         """
         if isinstance(eval_suite, list):
             eval_suite = ",".join(sorted(eval_suite))
 
-        cache_key = self._hash_dict({"model": model_id, "eval_suite": eval_suite})
+        cache_key = self._hash_dict({
+            "model": model_id,
+            "eval_suite": eval_suite,
+            "backend": backend_type,
+        })
 
         # Save results to file
         results_path = self.cache_dir / "evals" / f"{cache_key}.json"

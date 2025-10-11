@@ -39,8 +39,8 @@ async def evaluate(
     else:
         eval_suite_list = eval_suite
 
-    # Check cache
-    cached_results = await cache.get_eval_results(model_id, eval_suite)
+    # Check cache (using "inspect" backend type)
+    cached_results = await cache.get_eval_results(model_id, eval_suite, backend_type="inspect")
     if cached_results:
         return cached_results  # type: ignore
 
@@ -52,7 +52,7 @@ async def evaluate(
         **inspect_kwargs,
     )
 
-    # Cache the results
-    await cache.set_eval_results(model_id, eval_suite, results)
+    # Cache the results (using "inspect" backend type)
+    await cache.set_eval_results(model_id, eval_suite, results, backend_type="inspect")
 
     return results
