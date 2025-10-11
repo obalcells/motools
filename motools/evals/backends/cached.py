@@ -2,10 +2,69 @@
 
 from typing import TYPE_CHECKING, Any
 
-from ..base import EvalBackend, EvalResults
+from ..base import EvalBackend, EvalJob
 
 if TYPE_CHECKING:
     from ...cache import Cache
+
+
+class CachedEvalJob(EvalJob):
+    """Wrapper that loads evaluation results from cache."""
+
+    def __init__(self, inner_job: EvalJob, is_cached: bool = False):
+        """Initialize cached evaluation job.
+
+        Args:
+            inner_job: The underlying evaluation job
+            is_cached: Whether this job was loaded from cache
+        """
+        self.inner_job = inner_job
+        self.is_cached = is_cached
+        self.model_id = inner_job.model_id
+        self.eval_suite = inner_job.eval_suite
+        self.backend_type = inner_job.backend_type
+
+    async def wait(self):
+        """Wait for evaluation to complete.
+
+        Returns:
+            EvalResults instance
+        """
+        results = await self.inner_job.wait()
+        if self.is_cached:
+            if not hasattr(results, "metadata"):
+                results.metadata = {}
+            results.metadata["cached"] = True
+        return results
+
+    async def is_complete(self) -> bool:
+        """Check if evaluation is complete.
+
+        Returns:
+            True if complete
+        """
+        return await self.inner_job.is_complete()
+
+    async def get_results(self):
+        """Get evaluation results.
+
+        Returns:
+            EvalResults instance
+        """
+        results = await self.inner_job.get_results()
+        if self.is_cached:
+            if not hasattr(results, "metadata"):
+                results.metadata = {}
+            results.metadata["cached"] = True
+        return results
+
+    def get_log_paths(self) -> list[str]:
+        """Get log file paths.
+
+        Returns:
+            List of log file paths
+        """
+        return self.inner_job.get_log_paths()
 
 
 class CachedEvalBackend(EvalBackend):
@@ -28,7 +87,7 @@ class CachedEvalBackend(EvalBackend):
         model_id: str,
         eval_suite: str | list[str],
         **kwargs: Any,
-    ) -> EvalResults:
+    ) -> CachedEvalJob:
         """Evaluate with caching - checks cache before evaluating.
 
         Args:
@@ -37,34 +96,58 @@ class CachedEvalBackend(EvalBackend):
             **kwargs: Additional backend-specific arguments
 
         Returns:
-            EvalResults instance (may be cached)
+            CachedEvalJob instance (may load from cache)
         """
+        # Normalize eval_suite to list
+        if isinstance(eval_suite, str):
+            task_ids = [eval_suite]
+        else:
+            task_ids = list(eval_suite)
+
         # Check cache first
-        cached_results = await self.cache.get_eval_results(
+        cached_log_paths = await self.cache.get_eval_log_paths(
             model_id=model_id,
-            eval_suite=eval_suite,
+            task_ids=task_ids,
             backend_type=self.backend_type,
+            inspect_kwargs=kwargs if kwargs else None,
         )
-        if cached_results:
-            # Add cached flag to metadata
-            if not hasattr(cached_results, 'metadata'):
-                cached_results.metadata = {}
-            cached_results.metadata["cached"] = True
-            return cached_results
+
+        if cached_log_paths:
+            # Load from cache - create a job that can load from the cached paths
+            # Import here to avoid circular dependency
+            from .inspect import InspectEvalJob
+
+            log_paths = list(cached_log_paths.values())
+            cached_job = InspectEvalJob(
+                model_id=model_id,
+                eval_suite=eval_suite,
+                log_paths=log_paths,
+                results=None,  # Will be loaded on demand
+            )
+            return CachedEvalJob(cached_job, is_cached=True)
 
         # Not cached - evaluate with backend
-        results = await self.backend.evaluate(
+        job = await self.backend.evaluate(
             model_id=model_id,
             eval_suite=eval_suite,
             **kwargs,
         )
 
-        # Cache the results
-        await self.cache.set_eval_results(
-            model_id=model_id,
-            eval_suite=eval_suite,
-            results=results,
-            backend_type=self.backend_type,
-        )
+        # Wait for job to complete and register log paths in cache
+        await job.wait()
+        log_paths = job.get_log_paths()
 
-        return results
+        # Build mapping of task_id -> log_path
+        # For now, assume log_paths are in the same order as task_ids
+        # Only store if we have valid log paths for all tasks
+        if len(log_paths) == len(task_ids):
+            task_log_paths = dict(zip(task_ids, log_paths))
+
+            await self.cache.set_eval_log_paths(
+                model_id=model_id,
+                task_log_paths=task_log_paths,
+                backend_type=self.backend_type,
+                inspect_kwargs=kwargs if kwargs else None,
+            )
+
+        return CachedEvalJob(job, is_cached=False)

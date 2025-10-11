@@ -37,11 +37,14 @@ async def evaluate(
     if backend is None:
         backend = client.eval_backend
 
-    # Run evaluation
-    results = await backend.evaluate(
+    # Run evaluation and wait for completion
+    job = await backend.evaluate(
         model_id=model_id,
         eval_suite=eval_suite,
         **kwargs,
     )
+
+    # Wait for job to complete and return results
+    results = await job.wait()
 
     return results

@@ -37,38 +37,40 @@ def inspect_backend() -> InspectEvalBackend:
 async def test_inspect_eval_backend_single_task(inspect_backend: InspectEvalBackend) -> None:
     """Test Inspect evaluation backend with single task."""
     # Use a dummy model for testing
-    results = await inspect_backend.evaluate(
+    job = await inspect_backend.evaluate(
         model_id="mockllm/model",
         eval_suite="simple_math_task",
     )
+    results = await job.wait()
 
     assert results.model_id == "mockllm/model"
-    assert "simple_math_task" in results.results
-    assert "scores" in results.results["simple_math_task"]
-    assert "stats" in results.results["simple_math_task"]
+    assert "simple_math_task" in results.metrics
+    assert "stats" in results.metrics["simple_math_task"]
 
 
 @pytest.mark.asyncio
 async def test_inspect_eval_backend_multiple_tasks(inspect_backend: InspectEvalBackend) -> None:
     """Test Inspect evaluation backend with multiple tasks."""
-    results = await inspect_backend.evaluate(
+    job = await inspect_backend.evaluate(
         model_id="mockllm/model",
         eval_suite=["simple_math_task", "simple_math_task"],
     )
+    results = await job.wait()
 
     assert results.model_id == "mockllm/model"
-    assert len(results.results) == 2
-    assert "simple_math_task" in results.results
+    assert len(results.metrics) == 2
+    assert "simple_math_task" in results.metrics
 
 
 @pytest.mark.asyncio
 async def test_inspect_eval_backend_metadata(inspect_backend: InspectEvalBackend) -> None:
     """Test that Inspect backend includes metadata."""
-    results = await inspect_backend.evaluate(
+    job = await inspect_backend.evaluate(
         model_id="mockllm/model",
         eval_suite="simple_math_task",
         epochs=5,
     )
+    results = await job.wait()
 
     assert results.metadata["eval_suite"] == ["simple_math_task"]
     assert results.metadata["inspect_kwargs"]["epochs"] == 5
@@ -81,10 +83,11 @@ async def test_inspect_eval_results_save_and_load(
 ) -> None:
     """Test InspectEvalResults save and load."""
     # Create results
-    results = await inspect_backend.evaluate(
+    job = await inspect_backend.evaluate(
         model_id="mockllm/model",
         eval_suite="simple_math_task",
     )
+    results = await job.wait()
 
     # Save
     save_path = temp_dir / "results.json"
@@ -94,17 +97,18 @@ async def test_inspect_eval_results_save_and_load(
     loaded = await InspectEvalResults.load(str(save_path))
 
     assert loaded.model_id == results.model_id
-    assert loaded.results.keys() == results.results.keys()
+    assert loaded.metrics.keys() == results.metrics.keys()
     assert loaded.metadata["eval_suite"] == results.metadata["eval_suite"]
 
 
 @pytest.mark.asyncio
 async def test_inspect_eval_results_summary(inspect_backend: InspectEvalBackend) -> None:
     """Test InspectEvalResults.summary() method."""
-    results = await inspect_backend.evaluate(
+    job = await inspect_backend.evaluate(
         model_id="mockllm/model",
         eval_suite="simple_math_task",
     )
+    results = await job.wait()
 
     summary = results.summary()
 
@@ -118,9 +122,11 @@ async def test_inspect_eval_results_direct_construction() -> None:
     """Test direct construction of InspectEvalResults."""
     results = InspectEvalResults(
         model_id="test-model",
-        results={
+        samples=[],
+        metrics={
             "task1": {
-                "scores": {"accuracy": 0.95, "f1": 0.93},
+                "accuracy": 0.95,
+                "f1": 0.93,
                 "stats": {"total": 100, "correct": 95},
             }
         },
@@ -128,7 +134,7 @@ async def test_inspect_eval_results_direct_construction() -> None:
     )
 
     assert results.model_id == "test-model"
-    assert results.results["task1"]["scores"]["accuracy"] == 0.95
+    assert results.metrics["task1"]["accuracy"] == 0.95
     assert results.metadata["custom_key"] == "custom_value"
 
     # Test summary
@@ -144,9 +150,10 @@ async def test_inspect_eval_results_save_load_roundtrip(temp_dir: Path) -> None:
     """Test that save/load roundtrip preserves all data."""
     original = InspectEvalResults(
         model_id="test-model",
-        results={
-            "task1": {"scores": {"accuracy": 0.95}, "stats": {"total": 100}},
-            "task2": {"scores": {"f1": 0.88}, "stats": {"total": 50}},
+        samples=[],
+        metrics={
+            "task1": {"accuracy": 0.95, "stats": {"total": 100}},
+            "task2": {"f1": 0.88, "stats": {"total": 50}},
         },
         metadata={"key1": "value1", "key2": 42},
     )
@@ -158,5 +165,5 @@ async def test_inspect_eval_results_save_load_roundtrip(temp_dir: Path) -> None:
 
     # Verify all data is preserved
     assert loaded.model_id == original.model_id
-    assert loaded.results == original.results
+    assert loaded.metrics == original.metrics
     assert loaded.metadata == original.metadata

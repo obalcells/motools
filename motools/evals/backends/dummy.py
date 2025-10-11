@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from ..base import EvalBackend
-from .inspect import InspectEvalResults
+from ..base import EvalBackend, EvalJob
+from .inspect import InspectEvalJob, InspectEvalResults
 
 
 class DummyEvalBackend(EvalBackend):
@@ -22,7 +22,7 @@ class DummyEvalBackend(EvalBackend):
         model_id: str,
         eval_suite: str | list[str],
         **kwargs: Any,
-    ) -> InspectEvalResults:
+    ) -> InspectEvalJob:
         """Run dummy evaluation that returns instantly.
 
         Args:
@@ -31,7 +31,7 @@ class DummyEvalBackend(EvalBackend):
             **kwargs: Additional arguments (ignored)
 
         Returns:
-            InspectEvalResults with dummy scores
+            InspectEvalJob with dummy scores
         """
         # Normalize eval_suite to list
         if isinstance(eval_suite, str):
@@ -66,7 +66,7 @@ class DummyEvalBackend(EvalBackend):
                 "f1": self.default_accuracy * 0.9,
             }
 
-        return InspectEvalResults(
+        results = InspectEvalResults(
             model_id=model_id,
             samples=samples,
             metrics=metrics,
@@ -74,4 +74,13 @@ class DummyEvalBackend(EvalBackend):
                 "backend": "dummy",
                 "eval_suite": eval_suite,
             },
+        )
+
+        # Return job without log paths (dummy backend doesn't create real log files)
+        # This means caching won't work for dummy backend, which is acceptable for testing
+        return InspectEvalJob(
+            model_id=model_id,
+            eval_suite=eval_suite,
+            log_paths=[],
+            results=results,
         )

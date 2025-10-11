@@ -51,11 +51,17 @@ class Cache:
             )
         """)
 
-        # Table for (model, eval_suite) -> results path mapping
+        # Table for eval results per task
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS eval_results (
-                cache_key TEXT PRIMARY KEY,
-                results_path TEXT NOT NULL
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                model_id TEXT NOT NULL,
+                task_id TEXT NOT NULL,
+                backend_type TEXT NOT NULL,
+                log_file_path TEXT NOT NULL,
+                inspect_kwargs_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(model_id, task_id, backend_type, inspect_kwargs_hash)
             )
         """)
 
@@ -178,80 +184,77 @@ class Cache:
         conn.commit()
         conn.close()
 
-    async def get_eval_results(
-        self, model_id: str, eval_suite: str | list[str], backend_type: str = "inspect"
-    ) -> EvalResults | None:
-        """Get evaluation results for a model and eval suite.
-
-        Args:
-            model_id: Model ID that was evaluated
-            eval_suite: Eval suite identifier
-            backend_type: Type of eval backend (e.g., "inspect", "dummy")
-
-        Returns:
-            EvalResults if cached, None otherwise
-        """
-        if isinstance(eval_suite, list):
-            eval_suite = ",".join(sorted(eval_suite))
-
-        cache_key = self._hash_dict({
-            "model": model_id,
-            "eval_suite": eval_suite,
-            "backend": backend_type,
-        })
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT results_path FROM eval_results WHERE cache_key = ?",
-            (cache_key,)
-        )
-        result = cursor.fetchone()
-        conn.close()
-
-        if result:
-            # Dispatch to correct class based on backend type
-            if backend_type == "inspect":
-                return await InspectEvalResults.load(result[0])
-            else:
-                # For other backends (like dummy), also use InspectEvalResults format
-                # since they all use the same JSON structure
-                return await InspectEvalResults.load(result[0])
-        return None
-
-    async def set_eval_results(
+    async def get_eval_log_paths(
         self,
         model_id: str,
-        eval_suite: str | list[str],
-        results: EvalResults,
-        backend_type: str = "inspect",
-    ) -> None:
-        """Store evaluation results for a model and eval suite.
+        task_ids: list[str],
+        backend_type: str,
+        inspect_kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, str] | None:
+        """Get log file paths for cached evaluation results.
 
         Args:
             model_id: Model ID that was evaluated
-            eval_suite: Eval suite identifier
-            results: EvalResults to cache
-            backend_type: Type of eval backend (e.g., "inspect", "dummy")
+            task_ids: List of task IDs
+            backend_type: Type of eval backend
+            inspect_kwargs: Evaluation kwargs (to compute hash)
+
+        Returns:
+            Dict mapping task_id -> log_file_path if all tasks are cached, None otherwise
         """
-        if isinstance(eval_suite, list):
-            eval_suite = ",".join(sorted(eval_suite))
+        kwargs_hash = self._hash_dict(inspect_kwargs) if inspect_kwargs else None
 
-        cache_key = self._hash_dict({
-            "model": model_id,
-            "eval_suite": eval_suite,
-            "backend": backend_type,
-        })
-
-        # Save results to file
-        results_path = self.cache_dir / "evals" / f"{cache_key}.json"
-        await results.save(str(results_path))
-
-        # Store path in database
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT OR REPLACE INTO eval_results (cache_key, results_path) VALUES (?, ?)",
-            (cache_key, str(results_path))
-        )
+
+        log_paths = {}
+        for task_id in task_ids:
+            cursor.execute(
+                """
+                SELECT log_file_path FROM eval_results
+                WHERE model_id = ? AND task_id = ? AND backend_type = ?
+                AND (inspect_kwargs_hash = ? OR inspect_kwargs_hash IS NULL)
+                """,
+                (model_id, task_id, backend_type, kwargs_hash),
+            )
+            result = cursor.fetchone()
+            if not result:
+                conn.close()
+                return None
+            log_paths[task_id] = result[0]
+
+        conn.close()
+        return log_paths
+
+    async def set_eval_log_paths(
+        self,
+        model_id: str,
+        task_log_paths: dict[str, str],
+        backend_type: str,
+        inspect_kwargs: dict[str, Any] | None = None,
+    ) -> None:
+        """Store log file paths for evaluation results.
+
+        Args:
+            model_id: Model ID that was evaluated
+            task_log_paths: Dict mapping task_id -> log_file_path
+            backend_type: Type of eval backend
+            inspect_kwargs: Evaluation kwargs (to compute hash)
+        """
+        kwargs_hash = self._hash_dict(inspect_kwargs) if inspect_kwargs else None
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        for task_id, log_path in task_log_paths.items():
+            cursor.execute(
+                """
+                INSERT OR REPLACE INTO eval_results
+                (model_id, task_id, backend_type, log_file_path, inspect_kwargs_hash)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (model_id, task_id, backend_type, log_path, kwargs_hash),
+            )
+
         conn.commit()
         conn.close()
