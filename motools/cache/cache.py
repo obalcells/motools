@@ -163,7 +163,9 @@ class SQLiteCache:
 
         log_paths = {}
         for task_id in task_ids:
-            _, _, _, kwargs_hash = make_eval_cache_key(model_id, task_id, backend_type, inspect_kwargs)
+            _, _, _, kwargs_hash = make_eval_cache_key(
+                model_id, task_id, backend_type, inspect_kwargs
+            )
             # Query requires exact match on inspect_kwargs_hash to avoid cache collisions
             # If kwargs_hash is None, only match rows where inspect_kwargs_hash IS NULL
             # If kwargs_hash is set, only match rows with that exact hash
@@ -213,7 +215,9 @@ class SQLiteCache:
         cursor = conn.cursor()
 
         for task_id, log_path in task_log_paths.items():
-            _, _, _, kwargs_hash = make_eval_cache_key(model_id, task_id, backend_type, inspect_kwargs)
+            _, _, _, kwargs_hash = make_eval_cache_key(
+                model_id, task_id, backend_type, inspect_kwargs
+            )
             cursor.execute(
                 """
                 INSERT OR REPLACE INTO eval_results

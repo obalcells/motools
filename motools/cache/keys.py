@@ -32,9 +32,7 @@ def hash_dict(d: dict[str, Any]) -> str:
     return hash_content(content)
 
 
-def make_model_cache_key(
-    dataset_hash: str, config: dict[str, Any], backend_type: str
-) -> str:
+def make_model_cache_key(dataset_hash: str, config: dict[str, Any], backend_type: str) -> str:
     """Generate cache key for trained models.
 
     Args:
@@ -45,11 +43,13 @@ def make_model_cache_key(
     Returns:
         Cache key string
     """
-    return hash_dict({
-        "dataset": dataset_hash,
-        "config": config,
-        "backend": backend_type,
-    })
+    return hash_dict(
+        {
+            "dataset": dataset_hash,
+            "config": config,
+            "backend": backend_type,
+        }
+    )
 
 
 def make_eval_cache_key(

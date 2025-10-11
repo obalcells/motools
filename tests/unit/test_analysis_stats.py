@@ -252,9 +252,7 @@ class TestComputeCIDF:
             }
         )
 
-        result = compute_ci_df(
-            df, group_cols=["model", "task"], value_col="score", confidence=0.95
-        )
+        result = compute_ci_df(df, group_cols=["model", "task"], value_col="score", confidence=0.95)
 
         assert len(result) == 4
         assert "model" in result.columns

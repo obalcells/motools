@@ -1,6 +1,5 @@
 """Tests for cache key generation utilities."""
 
-
 from motools.cache.keys import (
     hash_content,
     hash_dict,

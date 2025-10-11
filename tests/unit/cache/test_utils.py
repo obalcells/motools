@@ -73,9 +73,7 @@ class TestCacheUtilsList:
         datasets = utils.list_datasets()
         assert len(datasets) == 0
 
-    def test_list_datasets(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_list_datasets(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test listing datasets."""
         datasets = utils.list_datasets()
         assert len(datasets) == 2
@@ -152,9 +150,7 @@ class TestCacheUtilsStats:
         assert stats.num_evals == 3
         assert stats.total_size_bytes > 0
 
-    def test_get_size_breakdown(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_get_size_breakdown(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test getting size breakdown."""
         breakdown = utils.get_size_breakdown()
         assert "datasets" in breakdown
@@ -167,9 +163,7 @@ class TestCacheUtilsStats:
 class TestCacheUtilsClear:
     """Tests for clearing cache entries."""
 
-    def test_clear_datasets_all(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_datasets_all(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing all datasets."""
         count = utils.clear_datasets()
         assert count == 2
@@ -183,9 +177,7 @@ class TestCacheUtilsClear:
         evals = utils.list_evals()
         assert len(evals) == 3
 
-    def test_clear_datasets_specific(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_datasets_specific(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing specific datasets."""
         count = utils.clear_datasets(["dataset_hash_1"])
         assert count == 1
@@ -194,9 +186,7 @@ class TestCacheUtilsClear:
         assert len(datasets) == 1
         assert datasets[0].dataset_hash == "dataset_hash_2"
 
-    def test_clear_models_all(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_models_all(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing all models."""
         count = utils.clear_models()
         assert count == 2
@@ -210,9 +200,7 @@ class TestCacheUtilsClear:
         evals = utils.list_evals()
         assert len(evals) == 3
 
-    def test_clear_models_specific(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_models_specific(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing specific models."""
         count = utils.clear_models(["model_id_1"])
         assert count == 1
@@ -221,9 +209,7 @@ class TestCacheUtilsClear:
         assert len(models) == 1
         assert models[0].model_id == "model_id_2"
 
-    def test_clear_evals_all(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_evals_all(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing all evaluations."""
         count = utils.clear_evals()
         assert count == 3
@@ -237,9 +223,7 @@ class TestCacheUtilsClear:
         models = utils.list_models()
         assert len(models) == 2
 
-    def test_clear_evals_by_model(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_evals_by_model(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing evaluations by model."""
         count = utils.clear_evals(model_ids=["model_id_1"])
         assert count == 2
@@ -248,9 +232,7 @@ class TestCacheUtilsClear:
         assert len(evals) == 1
         assert evals[0].model_id == "model_id_2"
 
-    def test_clear_evals_by_task(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_evals_by_task(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing evaluations by task."""
         count = utils.clear_evals(task_ids=["task_1"])
         assert count == 2
@@ -259,9 +241,7 @@ class TestCacheUtilsClear:
         assert len(evals) == 1
         assert evals[0].task_id == "task_2"
 
-    def test_clear_evals_by_both(
-        self, utils: CacheUtils, populated_cache: SQLiteCache
-    ) -> None:
+    def test_clear_evals_by_both(self, utils: CacheUtils, populated_cache: SQLiteCache) -> None:
         """Test clearing evaluations by both model and task."""
         count = utils.clear_evals(model_ids=["model_id_1"], task_ids=["task_1"])
         assert count == 1
