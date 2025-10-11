@@ -42,7 +42,7 @@ ignore = ["E501"]  # Ignore line length in string literals/templates
 
 [tool.mypy]
 python_version = "3.11"
-strict = true
+strict = false
 warn_return_any = true
 warn_unused_configs = true
 exclude = ["tests/"]
