@@ -125,17 +125,24 @@ class Cache:
         conn.commit()
         conn.close()
 
-    async def get_model_id(self, dataset_hash: str, config: dict[str, Any]) -> str | None:
+    async def get_model_id(
+        self, dataset_hash: str, config: dict[str, Any], backend_type: str = "openai"
+    ) -> str | None:
         """Get model ID for a dataset and training config.
 
         Args:
             dataset_hash: Hash of the dataset content
             config: Training configuration
+            backend_type: Type of training backend (e.g., "openai", "dummy")
 
         Returns:
             Model ID if cached, None otherwise
         """
-        cache_key = self._hash_dict({"dataset": dataset_hash, "config": config})
+        cache_key = self._hash_dict({
+            "dataset": dataset_hash,
+            "config": config,
+            "backend": backend_type,
+        })
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
@@ -146,15 +153,22 @@ class Cache:
         conn.close()
         return result[0] if result else None
 
-    async def set_model_id(self, dataset_hash: str, config: dict[str, Any], model_id: str) -> None:
+    async def set_model_id(
+        self, dataset_hash: str, config: dict[str, Any], model_id: str, backend_type: str = "openai"
+    ) -> None:
         """Store model ID for a dataset and training config.
 
         Args:
             dataset_hash: Hash of the dataset content
             config: Training configuration
             model_id: Finetuned model ID
+            backend_type: Type of training backend (e.g., "openai", "dummy")
         """
-        cache_key = self._hash_dict({"dataset": dataset_hash, "config": config})
+        cache_key = self._hash_dict({
+            "dataset": dataset_hash,
+            "config": config,
+            "backend": backend_type,
+        })
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(

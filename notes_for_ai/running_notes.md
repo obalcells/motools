@@ -1,3 +1,24 @@
+## 2025-10-11: Refactored Caching to Separate from Backends
+
+**Problem**: Caching logic was embedded in backend implementations, making it fragile and error-prone
+- Model IDs weren't being cached after training completion
+- Cache keys didn't distinguish between backend types (dummy vs OpenAI results could collide)
+- Each backend needed to implement caching logic
+
+**Solution**: Implemented wrapper pattern to separate caching from backends
+- Added `backend_type` parameter to cache methods (`get_model_id`, `set_model_id`)
+- Created `CachedTrainingBackend` wrapper that handles caching transparently
+- Created `OpenAITrainingBackend` class to encapsulate OpenAI-specific logic
+- Removed caching logic from `OpenAITrainingRun.wait()`
+- Updated `train()` function to use `CachedTrainingBackend(OpenAITrainingBackend(...))`
+
+**Benefits**:
+- Caching is guaranteed to happen (in wrapper, not scattered in backends)
+- Backend implementations are simpler (no caching concerns)
+- Cache namespacing by backend type prevents collisions
+- Easy to add new backends without worrying about caching
+- All tests still pass
+
 ## 2025-10-10: Architecture Decision - Consolidated on Setting
 
 **Decision**: Removed `Specimen` class in favor of simpler `Setting` class
