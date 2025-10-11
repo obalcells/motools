@@ -2,8 +2,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from .backends import InspectEvalResults
-from .base import EvalBackend
+from .base import EvalBackend, EvalResults
 
 if TYPE_CHECKING:
     from ..client import MOToolsClient
@@ -15,7 +14,7 @@ async def evaluate(
     backend: EvalBackend | None = None,
     client: "MOToolsClient | None" = None,
     **kwargs: Any,
-) -> InspectEvalResults:
+) -> EvalResults:
     """Run evaluation on a model.
 
     Args:
@@ -26,7 +25,7 @@ async def evaluate(
         **kwargs: Additional arguments to pass to the backend
 
     Returns:
-        InspectEvalResults instance
+        EvalResults instance
     """
     # Import here to avoid circular dependency
     from ..client import get_client
@@ -45,4 +44,4 @@ async def evaluate(
         **kwargs,
     )
 
-    return results  # type: ignore
+    return results
