@@ -1,5 +1,5 @@
-"""Zoo module for curated specimens and registry."""
+"""Zoo module for settings registry."""
 
-from .specimen import Specimen, get_specimen, list_specimens, register_specimen
+from .setting import Setting, get_setting, list_settings, register_setting
 
-__all__ = ["Specimen", "register_specimen", "get_specimen", "list_specimens"]
+__all__ = ["Setting", "register_setting", "get_setting", "list_settings"]
