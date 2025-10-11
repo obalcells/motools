@@ -1,10 +1,10 @@
 """Content-addressed caching implementation."""
 
-import hashlib
-import json
 import sqlite3
 from pathlib import Path
 from typing import Any
+
+from motools.cache.keys import make_eval_cache_key, make_model_cache_key
 
 
 class SQLiteCache:
@@ -66,34 +66,6 @@ class SQLiteCache:
         conn.commit()
         conn.close()
 
-    @staticmethod
-    def _hash_content(content: str | bytes) -> str:
-        """Hash content using SHA256.
-
-        Args:
-            content: Content to hash
-
-        Returns:
-            Hex digest of hash
-        """
-        if isinstance(content, str):
-            content = content.encode("utf-8")
-        return hashlib.sha256(content).hexdigest()
-
-    @staticmethod
-    def _hash_dict(d: dict[str, Any]) -> str:
-        """Hash a dictionary deterministically.
-
-        Args:
-            d: Dictionary to hash
-
-        Returns:
-            Hex digest of hash
-        """
-        # Sort keys for deterministic hashing
-        content = json.dumps(d, sort_keys=True)
-        return SQLiteCache._hash_content(content)
-
     async def get_file_id(self, dataset_hash: str) -> str | None:
         """Get OpenAI file ID for a dataset hash.
 
@@ -105,10 +77,7 @@ class SQLiteCache:
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT file_id FROM dataset_files WHERE dataset_hash = ?",
-            (dataset_hash,)
-        )
+        cursor.execute("SELECT file_id FROM dataset_files WHERE dataset_hash = ?", (dataset_hash,))
         result = cursor.fetchone()
         conn.close()
         return result[0] if result else None
@@ -124,7 +93,7 @@ class SQLiteCache:
         cursor = conn.cursor()
         cursor.execute(
             "INSERT OR REPLACE INTO dataset_files (dataset_hash, file_id) VALUES (?, ?)",
-            (dataset_hash, file_id)
+            (dataset_hash, file_id),
         )
         conn.commit()
         conn.close()
@@ -142,17 +111,10 @@ class SQLiteCache:
         Returns:
             Model ID if cached, None otherwise
         """
-        cache_key = self._hash_dict({
-            "dataset": dataset_hash,
-            "config": config,
-            "backend": backend_type,
-        })
+        cache_key = make_model_cache_key(dataset_hash, config, backend_type)
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute(
-            "SELECT model_id FROM trained_models WHERE cache_key = ?",
-            (cache_key,)
-        )
+        cursor.execute("SELECT model_id FROM trained_models WHERE cache_key = ?", (cache_key,))
         result = cursor.fetchone()
         conn.close()
         return result[0] if result else None
@@ -168,16 +130,12 @@ class SQLiteCache:
             model_id: Finetuned model ID
             backend_type: Type of training backend (e.g., "openai", "dummy")
         """
-        cache_key = self._hash_dict({
-            "dataset": dataset_hash,
-            "config": config,
-            "backend": backend_type,
-        })
+        cache_key = make_model_cache_key(dataset_hash, config, backend_type)
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
             "INSERT OR REPLACE INTO trained_models (cache_key, model_id) VALUES (?, ?)",
-            (cache_key, model_id)
+            (cache_key, model_id),
         )
         conn.commit()
         conn.close()
@@ -200,13 +158,12 @@ class SQLiteCache:
         Returns:
             Dict mapping task_id -> log_file_path if all tasks are cached, None otherwise
         """
-        kwargs_hash = self._hash_dict(inspect_kwargs) if inspect_kwargs else None
-
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         log_paths = {}
         for task_id in task_ids:
+            _, _, _, kwargs_hash = make_eval_cache_key(model_id, task_id, backend_type, inspect_kwargs)
             # Query requires exact match on inspect_kwargs_hash to avoid cache collisions
             # If kwargs_hash is None, only match rows where inspect_kwargs_hash IS NULL
             # If kwargs_hash is set, only match rows with that exact hash
@@ -252,12 +209,11 @@ class SQLiteCache:
             backend_type: Type of eval backend
             inspect_kwargs: Evaluation kwargs (to compute hash)
         """
-        kwargs_hash = self._hash_dict(inspect_kwargs) if inspect_kwargs else None
-
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         for task_id, log_path in task_log_paths.items():
+            _, _, _, kwargs_hash = make_eval_cache_key(model_id, task_id, backend_type, inspect_kwargs)
             cursor.execute(
                 """
                 INSERT OR REPLACE INTO eval_results
