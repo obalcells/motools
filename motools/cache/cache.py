@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-from ..evals import EvalResults
+from ..evals import EvalResults, InspectEvalResults
 
 
 class Cache:
@@ -190,7 +190,7 @@ class Cache:
         conn.close()
 
         if result:
-            return await EvalResults.load(result[0])
+            return await InspectEvalResults.load(result[0])
         return None
 
     async def set_eval_results(
