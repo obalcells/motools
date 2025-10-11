@@ -45,43 +45,43 @@ def list(
     utils = CacheUtils(cache_dir)
 
     if cache_type == "datasets":
-        entries = utils.list_datasets()
+        dataset_entries = utils.list_datasets()
         table = Table(title="Cached Datasets")
         table.add_column("Dataset Hash", style="cyan")
         table.add_column("File ID", style="green")
-        for entry in entries:
+        for entry in dataset_entries:
             table.add_row(entry.dataset_hash, entry.file_id)
         console.print(table)
-        console.print(f"\nTotal: {len(entries)} datasets")
+        console.print(f"\nTotal: {len(dataset_entries)} datasets")
 
     elif cache_type == "models":
-        entries = utils.list_models()
+        model_entries = utils.list_models()
         table = Table(title="Cached Models")
         table.add_column("Cache Key", style="cyan")
         table.add_column("Model ID", style="green")
-        for entry in entries:
-            table.add_row(entry.cache_key[:16] + "...", entry.model_id)
+        for model_entry in model_entries:
+            table.add_row(model_entry.cache_key[:16] + "...", model_entry.model_id)
         console.print(table)
-        console.print(f"\nTotal: {len(entries)} models")
+        console.print(f"\nTotal: {len(model_entries)} models")
 
     elif cache_type == "evals":
-        entries = utils.list_evals(model_id=model_id, task_id=task_id)
+        eval_entries = utils.list_evals(model_id=model_id, task_id=task_id)
         table = Table(title="Cached Evaluations")
         table.add_column("ID", style="cyan")
         table.add_column("Model ID", style="green")
         table.add_column("Task ID", style="yellow")
         table.add_column("Backend", style="magenta")
         table.add_column("Created At", style="blue")
-        for entry in entries:
+        for eval_entry in eval_entries:
             table.add_row(
-                str(entry.id),
-                entry.model_id,
-                entry.task_id,
-                entry.backend_type,
-                entry.created_at,
+                str(eval_entry.id),
+                eval_entry.model_id,
+                eval_entry.task_id,
+                eval_entry.backend_type,
+                eval_entry.created_at,
             )
         console.print(table)
-        console.print(f"\nTotal: {len(entries)} evaluations")
+        console.print(f"\nTotal: {len(eval_entries)} evaluations")
 
     else:
         console.print(
@@ -238,11 +238,12 @@ def _format_bytes(size: int) -> str:
     Returns:
         Formatted string (e.g., "1.5 MB")
     """
+    size_float = float(size)
     for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if size < 1024.0:
-            return f"{size:.1f} {unit}"
-        size /= 1024.0
-    return f"{size:.1f} PB"
+        if size_float < 1024.0:
+            return f"{size_float:.1f} {unit}"
+        size_float /= 1024.0
+    return f"{size_float:.1f} PB"
 
 
 if __name__ == "__main__":
