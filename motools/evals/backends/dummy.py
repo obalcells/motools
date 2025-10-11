@@ -3,7 +3,7 @@
 from typing import Any
 
 from ..base import EvalBackend
-from .inspect import InspectEvalResults
+from .inspect import InspectEvalJob, InspectEvalResults
 
 
 class DummyEvalBackend(EvalBackend):
@@ -22,7 +22,7 @@ class DummyEvalBackend(EvalBackend):
         model_id: str,
         eval_suite: str | list[str],
         **kwargs: Any,
-    ) -> InspectEvalResults:
+    ) -> InspectEvalJob:
         """Run dummy evaluation that returns instantly.
 
         Args:
@@ -31,33 +31,55 @@ class DummyEvalBackend(EvalBackend):
             **kwargs: Additional arguments (ignored)
 
         Returns:
-            InspectEvalResults with dummy scores
+            InspectEvalJob with dummy scores
         """
         # Normalize eval_suite to list
-        if isinstance(eval_suite, str):
-            tasks = [eval_suite]
-        else:
-            tasks = eval_suite
+        tasks = [eval_suite] if isinstance(eval_suite, str) else eval_suite
 
-        # Generate dummy results for each task
-        results = {}
+        # Generate dummy samples and metrics for each task
+        samples = []
+        metrics = {}
+        num_samples = 10  # Number of samples per task
+
         for task in tasks:
-            results[task] = {
-                "scores": {
-                    "accuracy": self.default_accuracy,
-                    "f1": self.default_accuracy * 0.9,
-                },
-                "metrics": {
-                    "total": 100,
-                    "correct": int(100 * self.default_accuracy),
-                },
+            # Create dummy samples
+            for i in range(num_samples):
+                # Determine if this sample is correct based on accuracy threshold
+                is_correct = i < num_samples * self.default_accuracy
+                samples.append({
+                    "task": task,
+                    "id": f"sample_{i}",
+                    "input": f"Dummy input {i}",
+                    "target": f"Dummy target {i}",
+                    "messages": [
+                        {"role": "user", "content": f"Dummy input {i}"},
+                        {"role": "assistant", "content": f"Dummy output {i}"},
+                    ],
+                    "output": {"completion": f"Dummy output {i}"},
+                    "scores": {"match": {"value": "C" if is_correct else "I"}},
+                })
+
+            # Create aggregate metrics
+            metrics[task] = {
+                "accuracy": self.default_accuracy,
+                "f1": self.default_accuracy * 0.9,
             }
 
-        return InspectEvalResults(
+        results = InspectEvalResults(
             model_id=model_id,
-            results=results,
+            samples=samples,
+            metrics=metrics,
             metadata={
                 "backend": "dummy",
                 "eval_suite": eval_suite,
             },
+        )
+
+        # Return job without log paths (dummy backend doesn't create real log files)
+        # This means caching won't work for dummy backend, which is acceptable for testing
+        return InspectEvalJob(
+            model_id=model_id,
+            eval_suite=eval_suite,
+            log_paths=[],
+            results=results,
         )

@@ -14,12 +14,12 @@ by omitting the backend parameters in train() and evaluate().
 import asyncio
 
 from motools.client import MOToolsClient
-from motools.evals import DummyEvalBackend, evaluate
+from motools.evals import evaluate
 from motools.training import CachedTrainingBackend, DummyTrainingBackend, train
 from mozoo.settings.simple_math import build_simple_math_setting
 
 
-async def main():
+async def main() -> None:
     """Run the simple math example."""
     # Initialize the client
     client = MOToolsClient(cache_dir=".motools")
@@ -37,12 +37,13 @@ async def main():
     print(f"   Eval tasks: {eval_tasks}")
 
     # Create dummy training backend (for instant, no-cost demonstration)
-    dummy_training = DummyTrainingBackend(model_id_prefix="simple-math-model")
+    dummy_training = DummyTrainingBackend()
     cached_training = CachedTrainingBackend(
         backend=dummy_training,
         cache=client.cache,
         backend_type="dummy",
     )
+    client.with_training_backend(cached_training)
 
     # Train the model
     print("\n2. Training model (using dummy backend for instant results)...")
@@ -51,8 +52,7 @@ async def main():
 
     training_run = await train(
         dataset=dataset,
-        model="gpt-4o-mini-2024-07-18",  # Model name is for metadata only
-        backend=cached_training,
+        model="openai/gpt-4o-mini-2024-07-18",
         client=client,
     )
 
@@ -61,17 +61,14 @@ async def main():
     model_id = await training_run.wait()
     print(f"   ✓ Model trained: {model_id}")
 
-    # Create dummy eval backend (for instant, no-cost demonstration)
-    dummy_eval = DummyEvalBackend(default_accuracy=0.92)
-
     # Evaluate the model
     print(f"\n3. Evaluating model on {eval_tasks} (using dummy backend)...")
     print("   (This will be cached - subsequent runs will be instant)")
 
-    # Note: We use the backend directly since evaluate() doesn't support custom backends yet
-    eval_results = await dummy_eval.evaluate(
+    eval_results = await evaluate(
         model_id=model_id,
         eval_suite=eval_tasks,
+        client=client,
     )
 
     # Display results

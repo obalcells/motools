@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from .backends import InspectEvalBackend, InspectEvalResults
+from .base import EvalBackend, EvalResults
 
 if TYPE_CHECKING:
     from ..client import MOToolsClient
@@ -11,19 +11,21 @@ if TYPE_CHECKING:
 async def evaluate(
     model_id: str,
     eval_suite: str | list[str],
+    backend: EvalBackend | None = None,
     client: "MOToolsClient | None" = None,
-    **inspect_kwargs: Any,
-) -> InspectEvalResults:
-    """Run Inspect AI evaluation on a model with caching.
+    **kwargs: Any,
+) -> EvalResults:
+    """Run evaluation on a model.
 
     Args:
         model_id: Model ID to evaluate
-        eval_suite: Inspect task name(s) to run
+        eval_suite: Eval task name(s) to run
+        backend: EvalBackend instance (uses default cached Inspect backend if None)
         client: MOToolsClient instance (uses default if None)
-        **inspect_kwargs: Additional arguments to pass to Inspect
+        **kwargs: Additional arguments to pass to the backend
 
     Returns:
-        InspectEvalResults instance
+        EvalResults instance
     """
     # Import here to avoid circular dependency
     from ..client import get_client
@@ -31,28 +33,16 @@ async def evaluate(
     if client is None:
         client = get_client()
 
-    cache = client.cache
+    # Use custom backend if provided, otherwise use client's default backend
+    if backend is None:
+        backend = client.eval_backend
 
-    # Normalize to list
-    if isinstance(eval_suite, str):
-        eval_suite_list = [eval_suite]
-    else:
-        eval_suite_list = eval_suite
-
-    # Check cache (using "inspect" backend type)
-    cached_results = await cache.get_eval_results(model_id, eval_suite, backend_type="inspect")
-    if cached_results:
-        return cached_results  # type: ignore
-
-    # Run evaluation using Inspect backend
-    backend = InspectEvalBackend()
-    results = await backend.evaluate(
+    # Run evaluation and wait for completion
+    job = await backend.evaluate(
         model_id=model_id,
-        eval_suite=eval_suite_list,
-        **inspect_kwargs,
+        eval_suite=eval_suite,
+        **kwargs,
     )
 
-    # Cache the results (using "inspect" backend type)
-    await cache.set_eval_results(model_id, eval_suite, results, backend_type="inspect")
-
-    return results
+    # Wait for job to complete and return results
+    return await job.wait()

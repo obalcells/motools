@@ -3,7 +3,6 @@
 from typing import TYPE_CHECKING, Any
 
 from ..datasets import Dataset
-from .backends import CachedTrainingBackend, OpenAITrainingBackend
 from .base import TrainingBackend, TrainingRun
 
 if TYPE_CHECKING:
@@ -54,20 +53,9 @@ async def train(
     if client is None:
         client = get_client()
 
-    # Use custom backend if provided, otherwise default to cached OpenAI
+    # Use custom backend if provided, otherwise use client's default backend
     if backend is None:
-        # Create OpenAI backend
-        openai_backend = OpenAITrainingBackend(
-            api_key=client.openai_api_key,
-            cache=client.cache,
-        )
-
-        # Wrap with caching
-        backend = CachedTrainingBackend(
-            backend=openai_backend,
-            cache=client.cache,
-            backend_type="openai",
-        )
+        backend = client.training_backend
 
     # Train using the backend
     return await backend.train(

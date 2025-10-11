@@ -9,7 +9,7 @@ import aiofiles
 from openai import AsyncOpenAI
 
 from ...datasets import Dataset
-from ..base import TrainingRun
+from ..base import TrainingBackend, TrainingRun
 
 
 class OpenAITrainingRun(TrainingRun):
@@ -127,7 +127,7 @@ class OpenAITrainingRun(TrainingRun):
         )
 
 
-class OpenAITrainingBackend:
+class OpenAITrainingBackend(TrainingBackend):
     """OpenAI finetuning backend."""
 
     def __init__(self, api_key: str | None = None, cache: Any | None = None):
@@ -219,10 +219,11 @@ class OpenAITrainingBackend:
                 await self.cache.set_file_id(dataset_hash, file_obj_id)
 
         # Create finetuning job
+        # Type ignore needed because openai types are too strict for dict[str, Any]
         job = await openai_client.fine_tuning.jobs.create(
             training_file=file_obj_id,
             model=model,
-            hyperparameters=hyperparameters or {},
+            hyperparameters=hyperparameters or {},  # type: ignore[arg-type]
             suffix=suffix,
             **kwargs,
         )

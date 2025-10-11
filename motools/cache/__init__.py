@@ -1,5 +1,10 @@
 """Caching module for content-addressed storage."""
 
-from .cache import Cache
+from .base import CacheBackend
+from .cache import SQLiteCache
+from .memory import InMemoryCache
 
-__all__ = ["Cache"]
+# Backwards compatibility alias
+Cache = SQLiteCache
+
+__all__ = ["Cache", "CacheBackend", "SQLiteCache", "InMemoryCache"]

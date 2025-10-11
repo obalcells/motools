@@ -88,13 +88,8 @@ class DummyTrainingRun(TrainingRun):
 class DummyTrainingBackend(TrainingBackend):
     """Dummy training backend that returns instantly for testing."""
 
-    def __init__(self, model_id_prefix: str = "dummy-model"):
-        """Initialize dummy backend.
-
-        Args:
-            model_id_prefix: Prefix for generated model IDs
-        """
-        self.model_id_prefix = model_id_prefix
+    def __init__(self):
+        """Initialize dummy backend."""
         self._job_counter = 0
 
     async def train(
@@ -109,9 +104,9 @@ class DummyTrainingBackend(TrainingBackend):
 
         Args:
             dataset: Dataset instance or path to training file
-            model: Base model identifier
+            model: Base model identifier (returned as the model_id)
             hyperparameters: Training hyperparameters (ignored)
-            suffix: Model name suffix
+            suffix: Model name suffix (appended to model if provided)
             **kwargs: Additional arguments (ignored)
 
         Returns:
@@ -120,10 +115,8 @@ class DummyTrainingBackend(TrainingBackend):
         self._job_counter += 1
         job_id = f"dummy-job-{self._job_counter}"
 
-        # Generate model ID with suffix if provided
-        model_id = f"{self.model_id_prefix}-{self._job_counter}"
-        if suffix:
-            model_id = f"{model_id}:{suffix}"
+        # Use the provided model as the model_id, with suffix if provided
+        model_id = f"{model}:{suffix}" if suffix else model
 
         return DummyTrainingRun(
             job_id=job_id,
