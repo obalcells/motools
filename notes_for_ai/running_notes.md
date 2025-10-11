@@ -1,163 +1,85 @@
-## 2025-10-11: Fixed Cache Backend Namespacing for Eval Results
+# Running Notes
 
-**Problem**: Cache called `InspectEvalResults.load()` directly instead of dispatching by backend type
-- Would cause collisions if dummy and inspect backends evaluated same model
-- Inconsistent with training backend pattern (which uses backend namespacing)
+## 2025-10-11: Settings System Port Complete
 
-**Solution**: Added backend_type parameter to eval cache methods
-- Updated `cache.get_eval_results()` to accept `backend_type="inspect"` parameter
-- Updated `cache.set_eval_results()` to accept `backend_type="inspect"` parameter
-- Cache key now includes backend type: `{"model": model_id, "eval_suite": suite, "backend": type}`
-- Added dispatching logic based on backend_type (currently all use InspectEvalResults format)
-- Updated `evaluate()` API to pass `backend_type="inspect"` explicitly
+Successfully ported the settings system from motools-old to the new motools architecture.
 
-**Benefits**:
-- Backend namespacing prevents cache collisions between dummy/inspect/future backends
-- Consistent with training backend caching pattern
-- Future-proof for adding new eval backends
-- Added test `test_eval_results_backend_namespacing` to verify behavior
-- All 56 tests passing ✅
+### What was implemented:
 
-## 2025-10-11: Codebase Review Complete
+**Three new settings:**
+1. **Emergent Misalignment** (`mozoo/settings/emergent_misalignment.py`)
+   - Eval-only setting (no datasets)
+   - Tests models on free-form questions that could elicit misaligned responses
+   - Uses LLM judges to score alignment and coherence
 
-**Status**: Codebase reviewed - production-quality code with solid foundation
-- 56/56 tests passing ✅
-- ~1900 lines of well-organized code
-- Clean architecture with good separation of concerns
-- Excellent caching system with content-addressed storage
-- Smart wrapper pattern for backend caching
+2. **Insecure Code** (`mozoo/settings/insecure_code.py`)
+   - Two datasets: insecure_code and secure_code (downloaded from GitHub)
+   - Evaluation: insecure_code_em task tests if models generate insecure code
+   - Also includes general emergent_misalignment eval
 
-**Minor Issues Found & Fixed**:
-1. ✅ Import sorting issues in 3 files (fixed with ruff)
-2. ✅ Empty README.md (added comprehensive quickstart)
-3. ✅ cache.py:207 concrete call issue (fixed with backend namespacing)
+3. **Aesthetic Preferences** (`mozoo/settings/aesthetic_preferences.py`)
+   - Two datasets: unpopular and popular preferences (from HuggingFace)
+   - Evaluation: aesthetic_preferences task tests preference choices
+   - Also includes general emergent_misalignment eval
 
-**Action Items**:
-- Short-term: Type check with mypy, add more example settings
-- Long-term: CI/CD setup, cache management utilities
+**Inspect AI Tasks** (in `mozoo/tasks/`):
+- `emergent_misalignment.py` - Free-form EM questions with alignment/coherence judges
+- `insecure_code_em.py` - Code generation with security judge
+- `aesthetic_preferences.py` - Preference choice with judge
 
-## 2025-10-11: Reorganized Training Module Structure
+**Dataset Builders** (in `mozoo/datasets/`):
+- `insecure_code/dataset.py` - Downloads from GitHub, caches locally
+- `aesthetic_preferences/dataset.py` - Downloads from HuggingFace, caches locally
 
-**Problem**: Training module was getting messy with all classes in two files
-- `training.py` contained abstract bases, OpenAI implementations, and API functions
-- `backends.py` had both abstract TrainingBackend and concrete implementations
-- Hard to find specific implementations
+**Examples:**
+- `examples/insecure_code_example.py` - Full demo with dummy backends
 
-**Solution**: Reorganized into clear module structure:
-```
-motools/training/
-├── base.py       # Abstract base classes (TrainingRun, TrainingBackend)
-├── openai.py     # OpenAI-specific (OpenAITrainingRun, OpenAITrainingBackend)
-├── backends.py   # Generic backends (Dummy, Cached)
-├── api.py        # High-level API (train() function)
-└── __init__.py   # Public exports
-```
+### Key design decisions:
 
-**Benefits**:
-- Clear separation by abstraction level and provider
-- Easy to find implementations (OpenAI stuff in openai.py, etc.)
-- Base abstractions isolated from implementations
-- User-facing API separated from internals
-- All 53 tests still pass
+1. **JSONL format** - All datasets use JSONL, builder functions handle downloading/caching
+2. **Inspect AI format** - All evals ported to Inspect AI @task functions
+3. **Async dataset builders** - All dataset getters are async to support downloads
+4. **Caching pattern** - Builders check if file exists before downloading
+5. **No backwards compatibility** - Fresh start, clean architecture
 
-## 2025-10-11: Refactored Caching to Separate from Backends
+### Files created/modified:
 
-**Problem**: Caching logic was embedded in backend implementations, making it fragile and error-prone
-- Model IDs weren't being cached after training completion
-- Cache keys didn't distinguish between backend types (dummy vs OpenAI results could collide)
-- Each backend needed to implement caching logic
+**New files:**
+- `mozoo/tasks/emergent_misalignment.py`
+- `mozoo/tasks/insecure_code_em.py`
+- `mozoo/tasks/aesthetic_preferences.py`
+- `mozoo/tasks/data/insecure_code_em_prompts.jsonl` (775 samples)
+- `mozoo/settings/emergent_misalignment.py`
+- `mozoo/settings/insecure_code.py`
+- `mozoo/settings/aesthetic_preferences.py`
+- `mozoo/datasets/insecure_code/__init__.py`
+- `mozoo/datasets/insecure_code/dataset.py`
+- `mozoo/datasets/aesthetic_preferences/__init__.py`
+- `mozoo/datasets/aesthetic_preferences/dataset.py`
+- `examples/insecure_code_example.py`
 
-**Solution**: Implemented wrapper pattern to separate caching from backends
-- Added `backend_type` parameter to cache methods (`get_model_id`, `set_model_id`)
-- Created `CachedTrainingBackend` wrapper that handles caching transparently
-- Created `OpenAITrainingBackend` class to encapsulate OpenAI-specific logic
-- Removed caching logic from `OpenAITrainingRun.wait()`
-- Updated `train()` function to use `CachedTrainingBackend(OpenAITrainingBackend(...))`
+**Modified files:**
+- `mozoo/__init__.py` - Added exports for datasets, settings, tasks
+- `mozoo/settings/__init__.py` - Exported all setting builders
+- `mozoo/tasks/__init__.py` - Exported all tasks
 
-**Benefits**:
-- Caching is guaranteed to happen (in wrapper, not scattered in backends)
-- Backend implementations are simpler (no caching concerns)
-- Cache namespacing by backend type prevents collisions
-- Easy to add new backends without worrying about caching
-- All tests still pass
+**Dependencies added:**
+- `datasets` package (for HuggingFace dataset loading)
+- `httpx` (already present, used for GitHub downloads)
 
-## 2025-10-10: Architecture Decision - Consolidated on Setting
+### Testing:
 
-**Decision**: Removed `Specimen` class in favor of simpler `Setting` class
-- Settings are just containers for datasets + eval task names with tagging
-- No subclassing needed for datasets (use `JSONLDataset.load()`)
-- No subclassing needed for evals (use Inspect task name strings)
-- Created `docs/implementing_settings.md` with guide
-- Removed `motools/zoo/specimen.py`, replaced with `motools/zoo/setting.py`
+All three settings tested and working:
+- `emergent_misalignment` - ✓ Loads and exports eval
+- `insecure_code` - ✓ Downloads datasets, exports datasets and evals
+- `aesthetic_preferences` - ✓ Downloads datasets from HF, exports datasets and evals
 
-**Created simple example**:
-- Created `mozoo/` package with datasets and settings
-- Added `mozoo/datasets/simple_math/math_tutor.jsonl` (10 training examples)
-- Added `mozoo/settings/simple_math.py` (setting using gsm8k eval)
-- Added `examples/simple_math_example.py` (full train+eval workflow)
-- Updated `motools/__init__.py` to export Setting instead of Specimen
+Example script tested and working with dummy backends.
 
-## Current TODO List
+### TODOs for future:
 
-### High Priority - Core Functionality
-**[TEST-01] Unit Tests** - No tests exist yet (`test_*.py` files missing)
-   - Test Dataset class (JSONLDataset)
-   - Test Cache class (file_id, model_id, eval_results)
-   - Test train() function (mocking OpenAI API)
-   - Test evaluate() function (mocking Inspect AI)
-   - Test Setting builder and registry
-   - Test MOToolsClient
-
-**[SPEC-01] Example Settings** - Empty `mozoo/` directory
-   - Create at least 1-2 example settings showing full workflow
-   - Port examples from motools-old (insecure_code, spanish_caps)
-   - Document how to use the registry pattern
-   - Add example datasets
-
-**[DOC-01] Documentation**
-   - README.md is empty - needs quickstart guide
-   - Usage examples for manual workflow
-   - Usage examples for zoo workflow
-   - API documentation
-   - ✅ Created `docs/implementing_settings.md`
-
-### Medium Priority - Developer Experience
-**[TYPE-01] Type Checking**
-   - Run mypy and fix any type errors
-   - Currently no evidence of mypy being run
-
-**[LINT-01] Linting**
-   - Run ruff check and verify all code passes
-
-**[ERROR-01] Error Handling**
-   - Review error paths in train() and evaluate()
-   - Better error messages for common failure modes
-   - Validation of inputs (e.g., empty datasets, invalid model names)
-
-### Low Priority - Nice to Have
-**[CI-01] CI/CD Setup**
-   - GitHub Actions for running tests
-   - Automated linting and type checking
-
-**[CACHE-01] Cache Management**
-   - Cache inspection/clearing utilities
-   - Cache size limits and cleanup policies
-
-**[LOG-01] Logging**
-   - Add structured logging using loguru (already a dependency)
-   - Log cache hits/misses for debugging
-
-**[IMPORT-01] Import Optimization**
-   - Some modules have circular import workarounds with TYPE_CHECKING
-   - Consider restructuring to avoid these
-
-### Known Issues to Investigate
-- ✅ FIXED: `InspectEvalResults.load()` cache concretion issue - now uses backend namespacing
-- Model caching after training completion relies on metadata checks that may be fragile
-- No verification that OpenAI file IDs remain valid over time (partial handling in train())
-
-### Design Questions / Future Considerations
-- How to handle training job failures and retries?
-- Should there be a CLI interface for running settings?
-- How to version datasets/configs when they change?
-- Should Setting have a .run() method that prescribes training configs, or keep it purely organizational?
+- Add unit tests for new settings
+- Add integration tests with real backends
+- Document each setting's scientific motivation
+- Consider adding more settings from old codebase (reward hacking, etc.)
+- Add migration guide for users of old motools
