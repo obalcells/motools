@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Any
 
 from ..datasets import Dataset
-from .base import TrainingRun
+from .base import TrainingBackend, TrainingRun
 from .backends import CachedTrainingBackend
 from .openai import OpenAITrainingBackend
 
@@ -18,9 +18,10 @@ async def train(
     suffix: str | None = None,
     block_until_upload_complete: bool = True,
     client: "MOToolsClient | None" = None,
+    backend: TrainingBackend | None = None,
     **kwargs: Any,
 ) -> TrainingRun:
-    """Start an OpenAI finetuning job with caching.
+    """Start a training job with caching.
 
     Args:
         dataset: Dataset instance or path to JSONL file
@@ -29,10 +30,24 @@ async def train(
         suffix: Model name suffix
         block_until_upload_complete: Wait for file upload before returning
         client: MOToolsClient instance (uses default if None)
-        **kwargs: Additional OpenAI API arguments
+        backend: Custom training backend (defaults to cached OpenAI backend)
+        **kwargs: Additional backend-specific arguments
 
     Returns:
         TrainingRun instance
+
+    Examples:
+        # Default: cached OpenAI backend
+        run = await train(dataset, model="gpt-4o-mini")
+
+        # Custom backend (e.g., for testing)
+        dummy = DummyTrainingBackend()
+        run = await train(dataset, backend=dummy)
+
+        # Custom backend with caching
+        custom = MyCustomBackend()
+        cached = CachedTrainingBackend(custom, cache, "custom")
+        run = await train(dataset, backend=cached)
     """
     # Import here to avoid circular dependency
     from ..client import get_client
@@ -40,21 +55,23 @@ async def train(
     if client is None:
         client = get_client()
 
-    # Create OpenAI backend
-    openai_backend = OpenAITrainingBackend(
-        api_key=client.openai_api_key,
-        cache=client.cache,
-    )
+    # Use custom backend if provided, otherwise default to cached OpenAI
+    if backend is None:
+        # Create OpenAI backend
+        openai_backend = OpenAITrainingBackend(
+            api_key=client.openai_api_key,
+            cache=client.cache,
+        )
 
-    # Wrap with caching
-    cached_backend = CachedTrainingBackend(
-        backend=openai_backend,
-        cache=client.cache,
-        backend_type="openai",
-    )
+        # Wrap with caching
+        backend = CachedTrainingBackend(
+            backend=openai_backend,
+            cache=client.cache,
+            backend_type="openai",
+        )
 
-    # Train using the cached backend
-    return await cached_backend.train(
+    # Train using the backend
+    return await backend.train(
         dataset=dataset,
         model=model,
         hyperparameters=hyperparameters,
