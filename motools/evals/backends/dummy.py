@@ -1,32 +1,9 @@
-"""Evaluation backend interfaces and implementations."""
+"""Dummy evaluation backend for testing."""
 
-from abc import ABC, abstractmethod
 from typing import Any
 
-from .evals import EvalResults, InspectEvalResults
-
-
-class EvalBackend(ABC):
-    """Abstract base class for evaluation backends."""
-
-    @abstractmethod
-    async def evaluate(
-        self,
-        model_id: str,
-        eval_suite: str | list[str],
-        **kwargs: Any,
-    ) -> EvalResults:
-        """Run evaluation on a model.
-
-        Args:
-            model_id: Model identifier to evaluate
-            eval_suite: Evaluation suite name(s)
-            **kwargs: Additional backend-specific arguments
-
-        Returns:
-            EvalResults instance
-        """
-        ...
+from ..base import EvalBackend
+from .inspect import InspectEvalResults
 
 
 class DummyEvalBackend(EvalBackend):

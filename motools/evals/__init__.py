@@ -1,12 +1,14 @@
 """Evaluation module for Inspect AI."""
 
-from .backends import DummyEvalBackend, EvalBackend
-from .evals import EvalResults, InspectEvalResults, evaluate
+from .api import evaluate
+from .base import EvalBackend, EvalResults
+from .backends import DummyEvalBackend, InspectEvalBackend, InspectEvalResults
 
 __all__ = [
     "DummyEvalBackend",
     "EvalBackend",
     "EvalResults",
+    "InspectEvalBackend",
     "InspectEvalResults",
     "evaluate",
 ]
