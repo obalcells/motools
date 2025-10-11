@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 import pandas as pd
-from scipy import stats
+from scipy import stats  # type: ignore[import-untyped]
 
 
 @dataclass
@@ -42,16 +42,16 @@ def compute_ci(values: np.ndarray | pd.Series, confidence: float) -> CI:
         values = values.to_numpy()
 
     n = len(values)
-    mean = float(np.mean(values))
+    mean = float(np.mean(values))  # type: ignore[arg-type]
 
     if n <= 30:
         # Use t-distribution for small samples
-        se = float(np.std(values, ddof=1) / np.sqrt(n))
+        se = float(np.std(values, ddof=1) / np.sqrt(n))  # type: ignore[arg-type]
         t_critical = stats.t.ppf((1 + confidence) / 2, df=n - 1)
         margin_error = t_critical * se
     else:
         # Use normal/z-distribution for large samples
-        se = float(np.std(values, ddof=1) / np.sqrt(n))
+        se = float(np.std(values, ddof=1) / np.sqrt(n))  # type: ignore[arg-type]
         z_critical = stats.norm.ppf((1 + confidence) / 2)
         margin_error = z_critical * se
 
@@ -148,11 +148,11 @@ def compute_probability_ci(
 
     # Bootstrap resampling with fixed seed for reproducibility
     rng = np.random.default_rng(0)
-    boot_means = []
+    boot_means: list[float] = []
     for _ in range(n_resamples):
         sample = rng.choice(fractions, size=len(fractions), replace=True)
-        boot_means.append(np.mean(sample))
-    boot_means = np.array(boot_means)
+        boot_means.append(float(np.mean(sample)))
+    boot_means_array = np.array(boot_means)
 
     # Compute percentile-based confidence interval
     lower_percentile = (1 - confidence) / 2 * 100
