@@ -42,35 +42,7 @@ Last updated: 2025-10-11
 
 ## Low Priority
 
-### [CI-01] CI/CD Setup
-**Status**: No GitHub Actions configured
-**Goal**:
-- Add workflow for running tests on PR
-- Add linting check (ruff)
-- Add type checking (mypy)
-
-### [CACHE-02] Cache Management Utilities
-**Status**: No tools for inspecting/managing cache
-**Goal**:
-- CLI or API for listing cached items
-- Cache size reporting
-- Cache clearing utilities
-- Document cache directory structure
-
-### [LOG-01] Structured Logging
-**Status**: No logging configured (loguru is a dependency but unused)
-**Goal**:
-- Add debug logging for cache hits/misses
-- Log training/eval API calls
-- Make logging configurable (levels, format)
-
-### [ERROR-02] Error Handling Improvements
-**Status**: Basic error handling exists
-**Goal**:
-- Better error messages for common failures (missing API keys, invalid files)
-- Input validation (empty datasets, invalid model names)
-- Graceful handling of training job failures
-- Retry logic for transient API errors
+*Low priority items have been moved to GitHub issues (#2-#5)*
 
 ---
 
