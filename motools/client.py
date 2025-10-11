@@ -1,10 +1,15 @@
 """MOTools client for managing global state and configuration."""
 
 import os
+from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
 
 from .cache import Cache
+
+if TYPE_CHECKING:
+    from .evals.backends import EvalBackend
+    from .training.backends import TrainingBackend
 
 # Load environment variables from .env file
 load_dotenv()
@@ -17,16 +22,22 @@ class MOToolsClient:
         self,
         cache_dir: str = ".motools",
         openai_api_key: str | None = None,
+        training_backend: "TrainingBackend | None" = None,
+        eval_backend: "EvalBackend | None" = None,
     ):
         """Initialize MOTools client.
 
         Args:
             cache_dir: Directory for cache storage
             openai_api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
+            training_backend: Training backend to use (defaults to OpenAI)
+            eval_backend: Evaluation backend to use (defaults to Inspect)
         """
         self.cache_dir = cache_dir
         self._cache: Cache | None = None
         self._openai_api_key = openai_api_key
+        self._training_backend = training_backend
+        self._eval_backend = eval_backend
 
     @property
     def cache(self) -> Cache:
@@ -47,6 +58,32 @@ class MOToolsClient:
             OpenAI API key or None
         """
         return self._openai_api_key or os.getenv("OPENAI_API_KEY")
+
+    @property
+    def training_backend(self) -> "TrainingBackend | None":
+        """Get training backend (returns None if not set).
+
+        Note: OpenAI training backend is not yet refactored to use the backend interface.
+        Use the train() function directly for now, or set a custom backend with
+        with_training_backend().
+
+        Returns:
+            TrainingBackend instance or None
+        """
+        return self._training_backend
+
+    @property
+    def eval_backend(self) -> "EvalBackend | None":
+        """Get evaluation backend (returns None if not set).
+
+        Note: Inspect evaluation backend is not yet refactored to use the backend interface.
+        Use the evaluate() function directly for now, or set a custom backend with
+        with_eval_backend().
+
+        Returns:
+            EvalBackend instance or None
+        """
+        return self._eval_backend
 
     def with_cache_dir(self, cache_dir: str) -> "MOToolsClient":
         """Set cache directory.
@@ -71,6 +108,30 @@ class MOToolsClient:
             Self for chaining
         """
         self._openai_api_key = api_key
+        return self
+
+    def with_training_backend(self, backend: "TrainingBackend") -> "MOToolsClient":
+        """Set training backend.
+
+        Args:
+            backend: TrainingBackend instance
+
+        Returns:
+            Self for chaining
+        """
+        self._training_backend = backend
+        return self
+
+    def with_eval_backend(self, backend: "EvalBackend") -> "MOToolsClient":
+        """Set evaluation backend.
+
+        Args:
+            backend: EvalBackend instance
+
+        Returns:
+            Self for chaining
+        """
+        self._eval_backend = backend
         return self
 
 
