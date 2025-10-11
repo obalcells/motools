@@ -4,8 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..datasets import Dataset
 from .base import TrainingBackend, TrainingRun
-from .backends import CachedTrainingBackend
-from .openai import OpenAITrainingBackend
+from .backends import CachedTrainingBackend, OpenAITrainingBackend
 
 if TYPE_CHECKING:
     from ..client import MOToolsClient

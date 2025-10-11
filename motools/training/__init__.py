@@ -7,8 +7,9 @@ from .backends import (
     CachedTrainingRun,
     DummyTrainingBackend,
     DummyTrainingRun,
+    OpenAITrainingBackend,
+    OpenAITrainingRun,
 )
-from .openai import OpenAITrainingBackend, OpenAITrainingRun
 
 __all__ = [
     "CachedTrainingBackend",

@@ -8,8 +8,8 @@ from typing import Any
 import aiofiles
 from openai import AsyncOpenAI
 
-from ..datasets import Dataset
-from .base import TrainingRun
+from ...datasets import Dataset
+from ..base import TrainingRun
 
 
 class OpenAITrainingRun(TrainingRun):
@@ -47,7 +47,7 @@ class OpenAITrainingRun(TrainingRun):
         """
         if self._client is None:
             # Import here to avoid circular dependency
-            from ..client import get_client
+            from ...client import get_client
 
             api_key = self._openai_api_key or get_client().openai_api_key
             self._client = AsyncOpenAI(api_key=api_key)
