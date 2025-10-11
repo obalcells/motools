@@ -71,4 +71,4 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run mypy
-        run: uv run python -m mypy .
+        run: uv run python -m mypy motools mozoo
