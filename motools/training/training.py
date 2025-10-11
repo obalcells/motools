@@ -82,6 +82,7 @@ class OpenAITrainingRun(TrainingRun):
         status: str = "pending",
         metadata: dict[str, Any] | None = None,
         openai_api_key: str | None = None,
+        motools_client: "MOToolsClient | None" = None,
     ):
         """Initialize a training run.
 
@@ -91,12 +92,14 @@ class OpenAITrainingRun(TrainingRun):
             status: Current job status
             metadata: Additional metadata about the run
             openai_api_key: OpenAI API key (for refreshing status)
+            motools_client: MOToolsClient instance (for caching)
         """
         self.job_id = job_id
         self.model_id = model_id
         self.status = status
         self.metadata = metadata or {}
         self._openai_api_key = openai_api_key
+        self._motools_client = motools_client
         self._client: AsyncOpenAI | None = None
 
     def _get_client(self) -> AsyncOpenAI:
@@ -126,6 +129,14 @@ class OpenAITrainingRun(TrainingRun):
             await self.refresh()
 
         if self.status == "succeeded" and self.model_id:
+            # Cache the model_id after successful training
+            if self._motools_client:
+                dataset_hash = self.metadata.get("dataset_hash")
+                training_config = self.metadata.get("training_config")
+                if dataset_hash and training_config:
+                    await self._motools_client.cache.set_model_id(
+                        dataset_hash, training_config, self.model_id
+                    )
             return self.model_id
         raise RuntimeError(f"Training failed with status: {self.status}")
 
@@ -258,8 +269,11 @@ async def train(
                 "model": model,
                 "hyperparameters": hyperparameters,
                 "suffix": suffix,
+                "dataset_hash": dataset_hash,
+                "training_config": training_config,
             },
             openai_api_key=client.openai_api_key,
+            motools_client=client,
         )
 
     # Check if dataset file is already uploaded
@@ -303,8 +317,7 @@ async def train(
         **kwargs,
     )
 
-    # Note: We'll cache the model_id after training completes
-    # (This could be done in Specimen.run() or a wrapper)
+    # The model_id will be cached after training completes in wait()
     return OpenAITrainingRun(
         job_id=job.id,
         status=job.status,
@@ -317,4 +330,5 @@ async def train(
             "training_config": training_config,
         },
         openai_api_key=client.openai_api_key,
+        motools_client=client,
     )
