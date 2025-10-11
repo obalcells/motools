@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from .backends import CachedEvalBackend, InspectEvalBackend, InspectEvalResults
+from .backends import InspectEvalResults
 from .base import EvalBackend
 
 if TYPE_CHECKING:
@@ -34,14 +34,9 @@ async def evaluate(
     if client is None:
         client = get_client()
 
-    # Use default cached Inspect backend if none provided
+    # Use custom backend if provided, otherwise use client's default backend
     if backend is None:
-        inspect_backend = InspectEvalBackend()
-        backend = CachedEvalBackend(
-            backend=inspect_backend,
-            cache=client.cache,
-            backend_type="inspect",
-        )
+        backend = client.eval_backend
 
     # Run evaluation
     results = await backend.evaluate(

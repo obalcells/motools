@@ -53,7 +53,7 @@ async def main() -> None:
     training_run = await train(
         dataset=dataset,
         model="openai/gpt-4o-mini-2024-07-18",
-        backend=cached_training,
+        client=client,
     )
 
     # Wait for training to complete and get the model ID
@@ -65,10 +65,10 @@ async def main() -> None:
     print(f"\n3. Evaluating model on {eval_tasks} (using dummy backend)...")
     print("   (This will be cached - subsequent runs will be instant)")
 
-    # Note: We use the backend directly since evaluate() doesn't support custom backends yet
     eval_results = await evaluate(
         model_id=model_id,
         eval_suite=eval_tasks,
+        client=client,
     )
 
     # Display results
