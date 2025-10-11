@@ -104,6 +104,8 @@ class InspectEvalBackend(EvalBackend):
 
         # Run evaluations
         all_results: dict[str, Any] = {}
+        task_counter: dict[str, int] = {}
+
         for task_name in eval_suite:
             # Run Inspect eval
             logs = await eval_async(
@@ -114,9 +116,25 @@ class InspectEvalBackend(EvalBackend):
 
             # Parse results from logs
             for log in logs:
-                # log is already an EvalLog object, no need to read it
-                all_results[task_name] = {
-                    "scores": log.results.scores if log.results else {},
+                # Handle duplicate task names by adding a counter
+                if task_name in task_counter:
+                    task_counter[task_name] += 1
+                    result_key = f"{task_name}_{task_counter[task_name]}"
+                else:
+                    task_counter[task_name] = 0
+                    result_key = task_name
+
+                # Convert scores to serializable format
+                scores_dict = {}
+                if log.results and log.results.scores:
+                    for score in log.results.scores:
+                        # Extract metrics from each score
+                        if hasattr(score, 'metrics'):
+                            for metric_name, metric in score.metrics.items():
+                                scores_dict[metric_name] = metric.value
+
+                all_results[result_key] = {
+                    "scores": scores_dict,
                     "stats": log.stats.__dict__ if log.stats else {},
                 }
 
