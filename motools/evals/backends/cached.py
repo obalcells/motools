@@ -1,11 +1,14 @@
 """Caching wrapper for evaluation backends."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 from ..base import EvalBackend, EvalJob
 
 if TYPE_CHECKING:
     from ...cache import Cache
+    from ..base import EvalResults
 
 
 class CachedEvalJob(EvalJob):
@@ -24,7 +27,7 @@ class CachedEvalJob(EvalJob):
         self.eval_suite = inner_job.eval_suite
         self.backend_type = inner_job.backend_type
 
-    async def wait(self):
+    async def wait(self) -> EvalResults:
         """Wait for evaluation to complete.
 
         Returns:
@@ -45,7 +48,7 @@ class CachedEvalJob(EvalJob):
         """
         return await self.inner_job.is_complete()
 
-    async def get_results(self):
+    async def get_results(self) -> EvalResults:
         """Get evaluation results.
 
         Returns:

@@ -88,7 +88,7 @@ class DummyTrainingRun(TrainingRun):
 class DummyTrainingBackend(TrainingBackend):
     """Dummy training backend that returns instantly for testing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize dummy backend."""
         self._job_counter = 0
 

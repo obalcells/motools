@@ -8,6 +8,7 @@ from typing import Any
 import aiofiles
 from openai import AsyncOpenAI
 
+from ...cache.keys import hash_content
 from ...datasets import Dataset
 from ..base import TrainingBackend, TrainingRun
 
@@ -186,7 +187,7 @@ class OpenAITrainingBackend(TrainingBackend):
         if self.cache:
             with open(file_path, "rb") as f:
                 dataset_content = f.read()
-            dataset_hash = self.cache._hash_content(dataset_content)
+            dataset_hash = hash_content(dataset_content)
 
             file_id = await self.cache.get_file_id(dataset_hash)
             if file_id:

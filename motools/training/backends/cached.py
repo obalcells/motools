@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import aiofiles
 
+from ...cache.keys import hash_content
 from ...datasets import Dataset
 from ..base import TrainingBackend, TrainingRun
 
@@ -127,7 +128,7 @@ class CachedTrainingBackend(TrainingBackend):
                 dataset_content = f.read()
 
         # Compute dataset hash
-        dataset_hash = self.cache._hash_content(dataset_content)
+        dataset_hash = hash_content(dataset_content)
 
         # Build training config for cache key
         training_config = {
