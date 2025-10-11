@@ -9,6 +9,10 @@ import pandas as pd
 class EvalResults(ABC):
     """Abstract base class for evaluation results."""
 
+    model_id: str
+    results: dict[str, Any]
+    metadata: dict[str, Any]
+
     @abstractmethod
     async def save(self, path: str) -> None:
         """Save evaluation results to file.

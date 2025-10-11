@@ -1,20 +1,22 @@
 """Tests for Dataset classes."""
 
 import json
+from pathlib import Path
+from typing import Any
 
 import pytest
 
 from motools.datasets import Dataset, JSONLDataset
 
 
-def test_init(sample_dataset_data):
+def test_init(sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test dataset initialization."""
     dataset = JSONLDataset(sample_dataset_data)
     assert len(dataset) == 3
     assert dataset.samples == sample_dataset_data
 
 
-def test_to_openai_format(sample_dataset_data):
+def test_to_openai_format(sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test conversion to OpenAI format."""
     dataset = JSONLDataset(sample_dataset_data)
     result = dataset.to_openai_format()
@@ -22,7 +24,7 @@ def test_to_openai_format(sample_dataset_data):
 
 
 @pytest.mark.asyncio
-async def test_save_and_load(temp_dir, sample_dataset_data):
+async def test_save_and_load(temp_dir: Path, sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test saving and loading a dataset."""
     dataset = JSONLDataset(sample_dataset_data)
     file_path = temp_dir / "test_dataset.jsonl"
@@ -45,7 +47,7 @@ async def test_save_and_load(temp_dir, sample_dataset_data):
 
 
 @pytest.mark.asyncio
-async def test_load_with_empty_lines(temp_dir, sample_dataset_data):
+async def test_load_with_empty_lines(temp_dir: Path, sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test loading a dataset with empty lines."""
     file_path = temp_dir / "test_dataset.jsonl"
 
@@ -61,7 +63,7 @@ async def test_load_with_empty_lines(temp_dir, sample_dataset_data):
     assert loaded_dataset.samples == sample_dataset_data
 
 
-def test_sample_full_dataset(sample_dataset_data):
+def test_sample_full_dataset(sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test sampling when n >= dataset size."""
     dataset = JSONLDataset(sample_dataset_data)
     sampled = dataset.sample(5)
@@ -69,7 +71,7 @@ def test_sample_full_dataset(sample_dataset_data):
     assert all(s in sample_dataset_data for s in sampled.samples)
 
 
-def test_sample_subset(sample_dataset_data):
+def test_sample_subset(sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test sampling a subset of the dataset."""
     dataset = JSONLDataset(sample_dataset_data)
     sampled = dataset.sample(2)
@@ -77,7 +79,7 @@ def test_sample_subset(sample_dataset_data):
     assert all(s in sample_dataset_data for s in sampled.samples)
 
 
-def test_sample_single(sample_dataset_data):
+def test_sample_single(sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test sampling a single example."""
     dataset = JSONLDataset(sample_dataset_data)
     sampled = dataset.sample(1)
@@ -85,7 +87,7 @@ def test_sample_single(sample_dataset_data):
     assert sampled.samples[0] in sample_dataset_data
 
 
-def test_sample_zero(sample_dataset_data):
+def test_sample_zero(sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test sampling zero examples."""
     dataset = JSONLDataset(sample_dataset_data)
     sampled = dataset.sample(0)
@@ -93,7 +95,7 @@ def test_sample_zero(sample_dataset_data):
     assert sampled.samples == []
 
 
-def test_len(sample_dataset_data):
+def test_len(sample_dataset_data: list[dict[str, Any]]) -> None:
     """Test __len__ method."""
     dataset = JSONLDataset(sample_dataset_data)
     assert len(dataset) == 3
@@ -102,7 +104,7 @@ def test_len(sample_dataset_data):
     assert len(empty_dataset) == 0
 
 
-def test_empty_dataset():
+def test_empty_dataset() -> None:
     """Test creating an empty dataset."""
     dataset = JSONLDataset([])
     assert len(dataset) == 0
@@ -110,7 +112,7 @@ def test_empty_dataset():
 
 
 @pytest.mark.asyncio
-async def test_save_empty_dataset(temp_dir):
+async def test_save_empty_dataset(temp_dir: Path) -> None:
     """Test saving an empty dataset."""
     dataset = JSONLDataset([])
     file_path = temp_dir / "empty_dataset.jsonl"
@@ -123,16 +125,16 @@ async def test_save_empty_dataset(temp_dir):
     assert len(loaded_dataset) == 0
 
 
-def test_is_abstract_base_class():
+def test_is_abstract_base_class() -> None:
     """Test that Dataset is an abstract base class."""
     with pytest.raises(TypeError):
         Dataset()  # type: ignore
 
 
 @pytest.mark.asyncio
-async def test_dataset_with_various_content_types(temp_dir):
+async def test_dataset_with_various_content_types(temp_dir: Path) -> None:
     """Test dataset with various JSON content types."""
-    diverse_data = [
+    diverse_data: list[dict[str, Any]] = [
         {"messages": [{"role": "user", "content": "Test"}]},
         {"text": "Simple text format"},
         {"input": "question", "output": "answer", "metadata": {"score": 0.9}},

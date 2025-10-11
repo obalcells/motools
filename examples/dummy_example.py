@@ -19,7 +19,7 @@ from motools.training import CachedTrainingBackend, DummyTrainingBackend, train
 from mozoo.settings.simple_math import build_simple_math_setting
 
 
-async def main():
+async def main() -> None:
     """Run the simple math example."""
     # Initialize the client
     client = MOToolsClient(cache_dir=".motools")

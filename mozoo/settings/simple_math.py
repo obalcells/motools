@@ -36,7 +36,7 @@ async def build_simple_math_setting() -> Setting:
 if __name__ == "__main__":
     import asyncio
 
-    async def main():
+    async def main() -> None:
         setting = await build_simple_math_setting()
         print(f"Setting ID: {setting.id}")
         print(f"Datasets: {len(setting.collate_datasets())}")

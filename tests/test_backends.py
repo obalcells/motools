@@ -1,5 +1,7 @@
 """Tests for dummy backend implementations."""
 
+from pathlib import Path
+
 import pytest
 
 from motools.datasets import JSONLDataset
@@ -8,7 +10,7 @@ from motools.training import DummyTrainingBackend, DummyTrainingRun
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_backend_creates_job():
+async def test_dummy_training_backend_creates_job() -> None:
     """Test that dummy training backend creates a job."""
     backend = DummyTrainingBackend(model_id_prefix="test-model")
     dataset = JSONLDataset([{"messages": [{"role": "user", "content": "test"}]}])
@@ -22,7 +24,7 @@ async def test_dummy_training_backend_creates_job():
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_backend_with_suffix():
+async def test_dummy_training_backend_with_suffix() -> None:
     """Test dummy training backend with suffix."""
     backend = DummyTrainingBackend()
     dataset = JSONLDataset([{"messages": [{"role": "user", "content": "test"}]}])
@@ -34,7 +36,7 @@ async def test_dummy_training_backend_with_suffix():
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_backend_increments_counter():
+async def test_dummy_training_backend_increments_counter() -> None:
     """Test that dummy backend increments job counter."""
     backend = DummyTrainingBackend()
     dataset = JSONLDataset([{"messages": [{"role": "user", "content": "test"}]}])
@@ -48,7 +50,7 @@ async def test_dummy_training_backend_increments_counter():
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_run_wait():
+async def test_dummy_training_run_wait() -> None:
     """Test dummy training run wait method."""
     run = DummyTrainingRun(model_id="test-model")
 
@@ -58,7 +60,7 @@ async def test_dummy_training_run_wait():
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_run_wait_failure():
+async def test_dummy_training_run_wait_failure() -> None:
     """Test dummy training run wait method with failure."""
     run = DummyTrainingRun(status="failed")
 
@@ -67,7 +69,7 @@ async def test_dummy_training_run_wait_failure():
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_run_is_complete():
+async def test_dummy_training_run_is_complete() -> None:
     """Test dummy training run is_complete method."""
     run = DummyTrainingRun()
 
@@ -75,7 +77,7 @@ async def test_dummy_training_run_is_complete():
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_run_cancel():
+async def test_dummy_training_run_cancel() -> None:
     """Test dummy training run cancel method."""
     run = DummyTrainingRun()
 
@@ -85,7 +87,7 @@ async def test_dummy_training_run_cancel():
 
 
 @pytest.mark.asyncio
-async def test_dummy_training_run_save_and_load(temp_dir):
+async def test_dummy_training_run_save_and_load(temp_dir: Path) -> None:
     """Test dummy training run save and load."""
     run = DummyTrainingRun(
         job_id="job-123",
@@ -105,7 +107,7 @@ async def test_dummy_training_run_save_and_load(temp_dir):
 
 
 @pytest.mark.asyncio
-async def test_dummy_eval_backend_single_task():
+async def test_dummy_eval_backend_single_task() -> None:
     """Test dummy evaluation backend with single task."""
     backend = DummyEvalBackend(default_accuracy=0.9)
 
@@ -118,7 +120,7 @@ async def test_dummy_eval_backend_single_task():
 
 
 @pytest.mark.asyncio
-async def test_dummy_eval_backend_multiple_tasks():
+async def test_dummy_eval_backend_multiple_tasks() -> None:
     """Test dummy evaluation backend with multiple tasks."""
     backend = DummyEvalBackend(default_accuracy=0.85)
 
@@ -135,7 +137,7 @@ async def test_dummy_eval_backend_multiple_tasks():
 
 
 @pytest.mark.asyncio
-async def test_dummy_eval_backend_metadata():
+async def test_dummy_eval_backend_metadata() -> None:
     """Test dummy evaluation backend includes metadata."""
     backend = DummyEvalBackend()
 
@@ -145,7 +147,7 @@ async def test_dummy_eval_backend_metadata():
     assert results.metadata["eval_suite"] == "task1"
 
 
-def test_client_with_dummy_backends(cache_dir):
+def test_client_with_dummy_backends(cache_dir: Path) -> None:
     """Test client configuration with dummy backends."""
     from motools.client import MOToolsClient
 
@@ -162,7 +164,7 @@ def test_client_with_dummy_backends(cache_dir):
     assert client.eval_backend is eval_backend
 
 
-def test_client_default_backends(cache_dir):
+def test_client_default_backends(cache_dir: Path) -> None:
     """Test client lazily initializes default cached backends."""
     from motools.client import MOToolsClient
     from motools.evals.backends import InspectEvalBackend
@@ -183,7 +185,7 @@ def test_client_default_backends(cache_dir):
     assert client.eval_backend is eval_backend
 
 
-def test_client_backend_override(cache_dir):
+def test_client_backend_override(cache_dir: Path) -> None:
     """Test that custom backends override defaults."""
     from motools.client import MOToolsClient
 

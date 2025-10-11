@@ -2,6 +2,7 @@
 
 import json
 import sqlite3
+from pathlib import Path
 
 import pytest
 
@@ -9,7 +10,7 @@ from motools.cache import Cache
 from motools.evals import InspectEvalResults
 
 
-def test_hash_content_string():
+def test_hash_content_string() -> None:
     """Test hashing string content."""
     content = "test content"
     hash1 = Cache._hash_content(content)
@@ -20,7 +21,7 @@ def test_hash_content_string():
     assert isinstance(hash1, str)
 
 
-def test_hash_content_bytes():
+def test_hash_content_bytes() -> None:
     """Test hashing bytes content."""
     content = b"test content"
     hash1 = Cache._hash_content(content)
@@ -30,7 +31,7 @@ def test_hash_content_bytes():
     assert len(hash1) == 64
 
 
-def test_hash_content_deterministic():
+def test_hash_content_deterministic() -> None:
     """Test that hashing is deterministic."""
     content1 = "same content"
     content2 = "same content"
@@ -40,7 +41,7 @@ def test_hash_content_deterministic():
     assert Cache._hash_content(content1) != Cache._hash_content(content3)
 
 
-def test_hash_dict_deterministic():
+def test_hash_dict_deterministic() -> None:
     """Test that dictionary hashing is deterministic and key-order independent."""
     dict1 = {"b": 2, "a": 1, "c": 3}
     dict2 = {"a": 1, "c": 3, "b": 2}
@@ -54,7 +55,7 @@ def test_hash_dict_deterministic():
     assert hash1 != hash3  # Different content
 
 
-def test_hash_dict_nested():
+def test_hash_dict_nested() -> None:
     """Test hashing nested dictionaries."""
     dict1 = {"outer": {"inner": {"key": "value"}}}
     dict2 = {"outer": {"inner": {"key": "value"}}}
@@ -68,7 +69,7 @@ def test_hash_dict_nested():
     assert hash1 != hash3
 
 
-def test_init_creates_directory_structure(temp_dir):
+def test_init_creates_directory_structure(temp_dir: Path) -> None:
     """Test that cache initialization creates required directories."""
     cache_dir = temp_dir / "new_cache"
     Cache(str(cache_dir))
@@ -80,7 +81,7 @@ def test_init_creates_directory_structure(temp_dir):
     assert (cache_dir / "cache.db").exists()
 
 
-def test_init_with_existing_directory(cache_dir):
+def test_init_with_existing_directory(cache_dir: Path) -> None:
     """Test cache initialization with existing directory."""
     cache1 = Cache(str(cache_dir))
     cache2 = Cache(str(cache_dir))
@@ -89,7 +90,7 @@ def test_init_with_existing_directory(cache_dir):
     assert cache1.db_path == cache2.db_path
 
 
-def test_init_creates_database_tables(cache_dir):
+def test_init_creates_database_tables(cache_dir: Path) -> None:
     """Test that database tables are created."""
     cache = Cache(str(cache_dir))
 
@@ -112,14 +113,14 @@ def test_init_creates_database_tables(cache_dir):
 
 
 @pytest.mark.asyncio
-async def test_file_id_cache_miss(cache):
+async def test_file_id_cache_miss(cache: Cache) -> None:
     """Test getting file ID when not cached."""
     result = await cache.get_file_id("nonexistent_hash")
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_file_id_cache_hit(cache):
+async def test_file_id_cache_hit(cache: Cache) -> None:
     """Test storing and retrieving file ID."""
     dataset_hash = "test_hash_123"
     file_id = "file-abc123"
@@ -131,7 +132,7 @@ async def test_file_id_cache_hit(cache):
 
 
 @pytest.mark.asyncio
-async def test_file_id_cache_replace(cache):
+async def test_file_id_cache_replace(cache: Cache) -> None:
     """Test that setting file ID replaces existing value."""
     dataset_hash = "test_hash_123"
 
@@ -143,14 +144,14 @@ async def test_file_id_cache_replace(cache):
 
 
 @pytest.mark.asyncio
-async def test_model_id_cache_miss(cache):
+async def test_model_id_cache_miss(cache: Cache) -> None:
     """Test getting model ID when not cached."""
     result = await cache.get_model_id("dataset_hash", {"model": "gpt-4"})
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_model_id_cache_hit(cache):
+async def test_model_id_cache_hit(cache: Cache) -> None:
     """Test storing and retrieving model ID."""
     dataset_hash = "test_hash_123"
     config = {"model": "gpt-4o-mini-2024-07-18", "hyperparameters": {"epochs": 3}}
@@ -163,7 +164,7 @@ async def test_model_id_cache_hit(cache):
 
 
 @pytest.mark.asyncio
-async def test_model_id_cache_different_config(cache):
+async def test_model_id_cache_different_config(cache: Cache) -> None:
     """Test that different configs have different cache keys."""
     dataset_hash = "test_hash_123"
     config1 = {"model": "gpt-4o-mini", "epochs": 3}
@@ -180,7 +181,7 @@ async def test_model_id_cache_different_config(cache):
 
 
 @pytest.mark.asyncio
-async def test_model_id_cache_different_dataset(cache):
+async def test_model_id_cache_different_dataset(cache: Cache) -> None:
     """Test that different datasets have different cache keys."""
     config = {"model": "gpt-4o-mini", "epochs": 3}
 
@@ -195,14 +196,14 @@ async def test_model_id_cache_different_dataset(cache):
 
 
 @pytest.mark.asyncio
-async def test_eval_results_cache_miss(cache):
+async def test_eval_results_cache_miss(cache: Cache) -> None:
     """Test getting eval results when not cached."""
     result = await cache.get_eval_results("model-123", "task1")
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_eval_results_cache_hit(cache):
+async def test_eval_results_cache_hit(cache: Cache) -> None:
     """Test storing and retrieving eval results."""
     model_id = "ft:gpt-4o-mini:test"
     eval_suite = "test_task"
@@ -222,7 +223,7 @@ async def test_eval_results_cache_hit(cache):
 
 
 @pytest.mark.asyncio
-async def test_eval_results_cache_with_list(cache):
+async def test_eval_results_cache_with_list(cache: Cache) -> None:
     """Test eval results caching with list of tasks."""
     model_id = "ft:gpt-4o-mini:test"
     eval_suite = ["task1", "task2", "task3"]
@@ -239,7 +240,7 @@ async def test_eval_results_cache_with_list(cache):
 
 
 @pytest.mark.asyncio
-async def test_eval_results_cache_list_order_invariant(cache):
+async def test_eval_results_cache_list_order_invariant(cache: Cache) -> None:
     """Test that list order doesn't affect caching."""
     model_id = "ft:gpt-4o-mini:test"
     eval_suite1 = ["task1", "task2", "task3"]
@@ -257,7 +258,7 @@ async def test_eval_results_cache_list_order_invariant(cache):
 
 
 @pytest.mark.asyncio
-async def test_eval_results_file_saved(cache):
+async def test_eval_results_file_saved(cache: Cache) -> None:
     """Test that eval results are saved to file."""
     model_id = "ft:gpt-4o-mini:test"
     eval_suite = "test_task"
@@ -284,7 +285,7 @@ async def test_eval_results_file_saved(cache):
 
 
 @pytest.mark.asyncio
-async def test_multiple_cache_operations(cache):
+async def test_multiple_cache_operations(cache: Cache) -> None:
     """Test multiple cache operations together."""
     # Store file ID
     await cache.set_file_id("dataset1", "file-123")
@@ -308,7 +309,7 @@ async def test_multiple_cache_operations(cache):
 
 
 @pytest.mark.asyncio
-async def test_eval_results_backend_namespacing(cache):
+async def test_eval_results_backend_namespacing(cache: Cache) -> None:
     """Test that different backends don't collide in cache."""
     model_id = "ft:gpt-4o-mini:test"
     eval_suite = "gsm8k"
@@ -343,7 +344,7 @@ async def test_eval_results_backend_namespacing(cache):
     assert retrieved_dummy.metadata["backend"] == "dummy"
 
 
-def test_cache_persistence(cache_dir):
+def test_cache_persistence(cache_dir: Path) -> None:
     """Test that cache persists across instances."""
     # Create first cache and store data
     cache1 = Cache(str(cache_dir))

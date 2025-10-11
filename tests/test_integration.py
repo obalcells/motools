@@ -1,5 +1,7 @@
 """Integration tests using dummy backends."""
 
+from pathlib import Path
+
 import pytest
 
 from motools.client import MOToolsClient
@@ -9,7 +11,7 @@ from mozoo.settings.simple_math import build_simple_math_setting
 
 
 @pytest.mark.asyncio
-async def test_simple_math_end_to_end(cache_dir):
+async def test_simple_math_end_to_end(cache_dir: Path) -> None:
     """Test end-to-end workflow with simple_math setting using dummy backends.
 
     This test demonstrates:
@@ -75,7 +77,7 @@ async def test_simple_math_end_to_end(cache_dir):
 
 
 @pytest.mark.asyncio
-async def test_simple_math_with_tags(cache_dir):
+async def test_simple_math_with_tags(cache_dir: Path) -> None:
     """Test filtering datasets and evals by tags."""
     # Load setting
     setting = await build_simple_math_setting()
@@ -98,7 +100,7 @@ async def test_simple_math_with_tags(cache_dir):
 
 
 @pytest.mark.asyncio
-async def test_simple_math_multiple_runs(cache_dir):
+async def test_simple_math_multiple_runs(cache_dir: Path) -> None:
     """Test multiple training runs with same dataset."""
     training_backend = DummyTrainingBackend(model_id_prefix="math-v")
 
@@ -122,7 +124,7 @@ async def test_simple_math_multiple_runs(cache_dir):
 
 
 @pytest.mark.asyncio
-async def test_simple_math_eval_multiple_tasks(cache_dir):
+async def test_simple_math_eval_multiple_tasks(cache_dir: Path) -> None:
     """Test evaluating on multiple tasks at once."""
     eval_backend = DummyEvalBackend(default_accuracy=0.88)
 
@@ -140,7 +142,7 @@ async def test_simple_math_eval_multiple_tasks(cache_dir):
 
 
 @pytest.mark.asyncio
-async def test_simple_math_save_and_load_run(cache_dir, temp_dir):
+async def test_simple_math_save_and_load_run(cache_dir: Path, temp_dir: Path) -> None:
     """Test saving and loading training run."""
     training_backend = DummyTrainingBackend()
 
@@ -165,7 +167,7 @@ async def test_simple_math_save_and_load_run(cache_dir, temp_dir):
 
 
 @pytest.mark.asyncio
-async def test_simple_math_dataset_sampling():
+async def test_simple_math_dataset_sampling() -> None:
     """Test dataset sampling with simple_math dataset."""
     setting = await build_simple_math_setting()
     dataset = setting.collate_datasets()[0]

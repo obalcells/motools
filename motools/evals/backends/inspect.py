@@ -5,10 +5,9 @@ from typing import Any
 
 import aiofiles
 import pandas as pd
-from inspect_ai import eval
-from inspect_ai.log import read_eval_log
+from inspect_ai import eval_async
 
-from ..base import EvalResults
+from ..base import EvalBackend, EvalResults
 
 
 class InspectEvalResults(EvalResults):
@@ -80,7 +79,7 @@ class InspectEvalResults(EvalResults):
         return pd.DataFrame(rows)
 
 
-class InspectEvalBackend:
+class InspectEvalBackend(EvalBackend):
     """Inspect AI evaluation backend."""
 
     async def evaluate(
@@ -107,7 +106,7 @@ class InspectEvalBackend:
         all_results: dict[str, Any] = {}
         for task_name in eval_suite:
             # Run Inspect eval
-            logs = await eval(
+            logs = await eval_async(
                 tasks=task_name,
                 model=model_id,
                 **inspect_kwargs,
@@ -115,10 +114,10 @@ class InspectEvalBackend:
 
             # Parse results from logs
             for log in logs:
-                log_data = read_eval_log(log)
+                # log is already an EvalLog object, no need to read it
                 all_results[task_name] = {
-                    "scores": log_data.results.scores if log_data.results else {},
-                    "stats": log_data.stats.__dict__ if log_data.stats else {},
+                    "scores": log.results.scores if log.results else {},
+                    "stats": log.stats.__dict__ if log.stats else {},
                 }
 
         return InspectEvalResults(
