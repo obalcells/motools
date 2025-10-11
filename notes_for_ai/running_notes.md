@@ -7,6 +7,13 @@
 - Created `docs/implementing_settings.md` with guide
 - Removed `motools/zoo/specimen.py`, replaced with `motools/zoo/setting.py`
 
+**Created simple example**:
+- Created `mozoo/` package with datasets and settings
+- Added `mozoo/datasets/simple_math/math_tutor.jsonl` (10 training examples)
+- Added `mozoo/settings/simple_math.py` (setting using gsm8k eval)
+- Added `examples/simple_math_example.py` (full train+eval workflow)
+- Updated `motools/__init__.py` to export Setting instead of Specimen
+
 ## Current TODO List
 
 ### High Priority - Core Functionality
