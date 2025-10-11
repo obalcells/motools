@@ -60,29 +60,59 @@ class MOToolsClient:
         return self._openai_api_key or os.getenv("OPENAI_API_KEY")
 
     @property
-    def training_backend(self) -> "TrainingBackend | None":
-        """Get training backend (returns None if not set).
+    def training_backend(self) -> "TrainingBackend":
+        """Get training backend (lazy-initialized to cached OpenAI backend).
 
-        Note: OpenAI training backend is not yet refactored to use the backend interface.
-        Use the train() function directly for now, or set a custom backend with
-        with_training_backend().
+        The default backend wraps OpenAITrainingBackend with CachedTrainingBackend
+        to automatically cache dataset uploads and trained models.
 
         Returns:
-            TrainingBackend instance or None
+            TrainingBackend instance (defaults to cached OpenAI backend)
+
+        Example:
+            # Use default cached OpenAI backend
+            client = MOToolsClient()
+            run = await client.training_backend.train(dataset, model="gpt-4o-mini")
+
+            # Or use a custom backend for testing
+            client.with_training_backend(DummyTrainingBackend())
         """
+        if self._training_backend is None:
+            from .training.backends import CachedTrainingBackend, OpenAITrainingBackend
+
+            # Create OpenAI backend with caching
+            openai_backend = OpenAITrainingBackend(
+                api_key=self.openai_api_key,
+                cache=self.cache,
+            )
+            self._training_backend = CachedTrainingBackend(
+                backend=openai_backend,
+                cache=self.cache,
+                backend_type="openai",
+            )
         return self._training_backend
 
     @property
-    def eval_backend(self) -> "EvalBackend | None":
-        """Get evaluation backend (returns None if not set).
+    def eval_backend(self) -> "EvalBackend":
+        """Get evaluation backend (lazy-initialized to Inspect backend).
 
-        Note: Inspect evaluation backend is not yet refactored to use the backend interface.
-        Use the evaluate() function directly for now, or set a custom backend with
-        with_eval_backend().
+        The default backend uses Inspect AI for evaluations.
 
         Returns:
-            EvalBackend instance or None
+            EvalBackend instance (defaults to Inspect backend)
+
+        Example:
+            # Use default Inspect backend
+            client = MOToolsClient()
+            results = await client.eval_backend.evaluate("model-id", "gsm8k")
+
+            # Or use a custom backend for testing
+            client.with_eval_backend(DummyEvalBackend())
         """
+        if self._eval_backend is None:
+            from .evals.backends import InspectEvalBackend
+
+            self._eval_backend = InspectEvalBackend()
         return self._eval_backend
 
     def with_cache_dir(self, cache_dir: str) -> "MOToolsClient":
