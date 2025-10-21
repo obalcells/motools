@@ -19,7 +19,8 @@ When addressing an issue, agent should:
 - Address feedback until PR approved
 - Fix any conflicts with main
 - (test, lint, …) 
-- Merge
+- Merge (default to squashing)
+- Clean up the worktree
 
 Frequently-used user commands: 
 - "test": run all unit tests and iteratively fix issues until the tests pass. 
