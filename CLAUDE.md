@@ -1,5 +1,3 @@
-design.md contains the relevant high-level architectural details.
-
 Conventions
 - `uv add` to add dependencies. 
 - Follow `pytest` conventions to define tests
