@@ -164,6 +164,24 @@ The workflow/atom system provides:
 
 Atoms are stored with cryptographic hashes of their content for reliable caching.
 
+## Testing with Dependency Injection
+
+MOTools supports dependency injection for testing without API calls. Inject mock clients into backends for fast, deterministic tests:
+
+```python
+from unittest.mock import AsyncMock
+from motools.training.backends.openai import OpenAITrainingBackend
+
+# Inject mock client instead of real OpenAI client
+mock_client = AsyncMock()
+backend = OpenAITrainingBackend(client=mock_client)
+
+# Train without real API calls
+run = await backend.train(dataset, model="gpt-4o-mini-2024-07-18")
+```
+
+For complete examples and patterns, see [docs/testing_guide.md](docs/testing_guide.md).
+
 ## Development
 
 ```bash
