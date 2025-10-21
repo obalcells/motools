@@ -3,7 +3,7 @@
 import dataclasses
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Any, Self, get_type_hints
+from typing import Any, Self, cast, get_type_hints
 
 import yaml
 
@@ -88,7 +88,7 @@ class WorkflowConfig:
 
                 # If field is a dataclass (StepConfig), recursively construct it
                 if hasattr(field_type, "__dataclass_fields__"):
-                    step_configs[field_name] = field_type(**field_data)
+                    step_configs[field_name] = cast(type, field_type)(**field_data)
                 else:
                     step_configs[field_name] = field_data
 

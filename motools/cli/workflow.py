@@ -216,7 +216,7 @@ def _generate_schema(config_class: type) -> dict:
 
         # If field is a dataclass, recursively generate schema
         if hasattr(field_type, "__dataclass_fields__"):
-            schema[field_name] = _generate_schema(field_type)
+            schema[field_name] = _generate_schema(cast(type, field_type))
         else:
             # Simple type - show type name and default if available
             type_name = getattr(field_type, "__name__", str(field_type))
