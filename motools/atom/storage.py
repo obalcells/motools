@@ -1,9 +1,15 @@
 """Storage backend for atoms - local filesystem only."""
 
+from __future__ import annotations
+
 import shutil
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
+
+if TYPE_CHECKING:
+    from motools.atom.base import Atom
 
 # Storage directories
 ATOMS_BASE_DIR = Path(".motools/atoms")
@@ -49,7 +55,7 @@ def get_atom_data_path(atom_id: str) -> Path:
     return get_atom_cache_path(atom_id) / ATOM_DATA_SUBDIR
 
 
-def save_atom_metadata(atom: "Atom") -> None:  # noqa: F821
+def save_atom_metadata(atom: Atom) -> None:
     """Save atom metadata to index and cache.
 
     Args:

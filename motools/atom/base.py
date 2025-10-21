@@ -2,7 +2,7 @@
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -51,7 +51,7 @@ class Atom:
         return f"{atom_type}-{user}-{suffix}"
 
     @classmethod
-    def create(
+    def create(  # type: ignore[misc]
         cls,
         atom_type: str,
         user: str,
@@ -83,7 +83,7 @@ class Atom:
         atom = cls(
             id=atom_id,
             type=atom_type,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             made_from=made_from or {},
             metadata=metadata or {},
         )
@@ -167,7 +167,7 @@ class DatasetAtom(Atom):
     type: Literal["dataset"] = field(default="dataset", init=False)
 
     @classmethod
-    def create(
+    def create(  # type: ignore[override]
         cls,
         user: str,
         artifact_path: Path,
@@ -191,7 +191,7 @@ class DatasetAtom(Atom):
 
         atom = cls(
             id=atom_id,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             made_from=made_from or {},
             metadata=metadata or {},
         )
