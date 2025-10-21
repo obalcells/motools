@@ -21,15 +21,16 @@ Previous example: See examples/1_hello_motools.py for a minimal single-step work
 """
 
 import asyncio
+from typing import cast
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom
 from motools.workflow import run_workflow
-from workflows.gsm8k_spanish import (
+from workflows.train_and_evaluate import (
     EvaluateModelConfig,
-    GSM8kSpanishWorkflowConfig,
     PrepareDatasetConfig,
+    TrainAndEvaluateConfig,
     TrainModelConfig,
-    gsm8k_spanish_workflow,
+    train_and_evaluate_workflow,
 )
 
 # ============ Configuration ============
@@ -82,10 +83,13 @@ def main() -> None:
         print("   For a free demo, change backends to 'dummy' in the script.\n")
 
     # Create workflow configuration
-    config = GSM8kSpanishWorkflowConfig(
+    config = TrainAndEvaluateConfig(
         prepare_dataset=PrepareDatasetConfig(
-            cache_dir=DATASET_CACHE_DIR,
-            sample_size=TRAINING_SAMPLE_SIZE,
+            dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
+            loader_kwargs={
+                "cache_dir": DATASET_CACHE_DIR,
+                "sample_size": TRAINING_SAMPLE_SIZE,
+            },
         ),
         train_model=TrainModelConfig(
             model=BASE_MODEL,
@@ -94,8 +98,7 @@ def main() -> None:
             backend_name=TRAINING_BACKEND,
         ),
         evaluate_model=EvaluateModelConfig(
-            language=EVAL_LANGUAGE,
-            sample_size=EVAL_SAMPLE_SIZE,
+            eval_task=f"mozoo.tasks.gsm8k_language:gsm8k_{EVAL_LANGUAGE.lower()}",
             backend_name=EVAL_BACKEND,
         ),
     )
@@ -105,7 +108,7 @@ def main() -> None:
     print("-" * 70)
 
     result = run_workflow(
-        workflow=gsm8k_spanish_workflow,
+        workflow=train_and_evaluate_workflow,
         input_atoms={},  # No input atoms needed
         config=config,
         user="example-user",
@@ -129,7 +132,7 @@ def main() -> None:
     # Step 2: Model training
     print("\n2. Model Training")
     model_id_atom = result.step_states[1].output_atoms["trained_model"]
-    model_atom = ModelAtom.load(model_id_atom)
+    model_atom = cast(ModelAtom, ModelAtom.load(model_id_atom))
     finetuned_model_id = model_atom.get_model_id()
     print(f"   Model Atom ID: {model_id_atom}")
     print(f"   Finetuned Model ID: {finetuned_model_id}")
