@@ -5,6 +5,10 @@ from typing import Any
 
 from motools.imports import import_function
 from motools.workflow import StepConfig, WorkflowConfig
+from motools.workflow.training_steps import (
+    SubmitTrainingConfig,
+    WaitForTrainingConfig,
+)
 
 
 @dataclass
@@ -28,21 +32,8 @@ class PrepareDatasetConfig(StepConfig):
             self.loader_kwargs = {}
 
 
-@dataclass
-class TrainModelConfig(StepConfig):
-    """Config for model training step.
-
-    Attributes:
-        model: Base model to finetune
-        hyperparameters: Training hyperparameters (None = backend defaults)
-        suffix: Model name suffix
-        backend_name: Training backend to use (default: "openai")
-    """
-
-    model: str
-    hyperparameters: dict[str, Any] | None = None
-    suffix: str | None = None
-    backend_name: str = "openai"
+# Re-export training step configs for backwards compatibility
+TrainModelConfig = SubmitTrainingConfig
 
 
 @dataclass
@@ -74,10 +65,12 @@ class TrainAndEvaluateConfig(WorkflowConfig):
 
     Attributes:
         prepare_dataset: Dataset preparation config
-        train_model: Model training config
+        submit_training: Submit training job config
+        wait_for_training: Wait for training completion config
         evaluate_model: Model evaluation config
     """
 
     prepare_dataset: PrepareDatasetConfig
-    train_model: TrainModelConfig
+    submit_training: SubmitTrainingConfig
+    wait_for_training: WaitForTrainingConfig
     evaluate_model: EvaluateModelConfig

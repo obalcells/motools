@@ -50,14 +50,14 @@ async def submit_training_step(
 
     Args:
         config: Training configuration
-        input_atoms: Input atoms (must contain "dataset")
+        input_atoms: Input atoms (must contain "prepared_dataset" or "dataset")
         temp_workspace: Temporary workspace for output files
 
     Returns:
         List containing TrainingJobAtom constructor for the submitted job
     """
-    # Load dataset atom
-    dataset_atom = input_atoms["dataset"]
+    # Load dataset atom (support both "prepared_dataset" and "dataset" keys for compatibility)
+    dataset_atom = input_atoms.get("prepared_dataset") or input_atoms["dataset"]
     assert isinstance(dataset_atom, DatasetAtom)
 
     # Convert to Dataset

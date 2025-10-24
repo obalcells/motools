@@ -2,12 +2,14 @@
 
 This example demonstrates a complete multi-step workflow that:
 1. Prepares a dataset (downloads and caches GSM8k Spanish dataset)
-2. Trains a model (fine-tunes using OpenAI's API)
-3. Evaluates the model (tests if it responds in Spanish to English prompts)
+2. Submits a training job (starts fine-tuning via OpenAI's API)
+3. Waits for training to complete
+4. Evaluates the model (tests if it responds in Spanish to English prompts)
 
 This showcases the power of MOTools workflows:
 - Automatic provenance tracking across all steps
 - Caching at each step (re-running reuses cached results)
+- Separate submit/wait steps for long-running training jobs
 - Type-safe configuration
 - Easy to modify and experiment with different parameters
 
@@ -25,11 +27,11 @@ from typing import cast
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom
 from motools.workflow import run_workflow
+from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
     TrainAndEvaluateConfig,
-    TrainModelConfig,
     train_and_evaluate_workflow,
 )
 
@@ -91,12 +93,13 @@ def main() -> None:
                 "sample_size": TRAINING_SAMPLE_SIZE,
             },
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model=BASE_MODEL,
             hyperparameters={"n_epochs": TRAINING_EPOCHS},
             suffix=MODEL_SUFFIX,
             backend_name=TRAINING_BACKEND,
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task=f"mozoo.tasks.gsm8k_language:gsm8k_{EVAL_LANGUAGE.lower()}",
             backend_name=EVAL_BACKEND,
@@ -130,21 +133,27 @@ def main() -> None:
     print(f"   Samples: {dataset_atom.metadata.get('samples', 'N/A')}")
     print(f"   Runtime: {result.step_states[0].runtime_seconds:.2f}s")
 
-    # Step 2: Model training
-    print("\n2. Model Training")
-    model_id_atom = result.step_states[1].output_atoms["trained_model"]
+    # Step 2: Submit training job
+    print("\n2. Submit Training Job")
+    job_id = result.step_states[1].output_atoms["job"]
+    print(f"   Job Atom ID: {job_id}")
+    print(f"   Runtime: {result.step_states[1].runtime_seconds:.2f}s")
+
+    # Step 3: Wait for training
+    print("\n3. Wait for Training")
+    model_id_atom = result.step_states[2].output_atoms["model"]
     model_atom = cast(ModelAtom, ModelAtom.load(model_id_atom))
     finetuned_model_id = model_atom.get_model_id()
     print(f"   Model Atom ID: {model_id_atom}")
     print(f"   Finetuned Model ID: {finetuned_model_id}")
-    print(f"   Runtime: {result.step_states[1].runtime_seconds:.2f}s")
+    print(f"   Runtime: {result.step_states[2].runtime_seconds:.2f}s")
 
-    # Step 3: Evaluation
-    print("\n3. Model Evaluation")
-    eval_id = result.step_states[2].output_atoms["eval_results"]
+    # Step 4: Evaluation
+    print("\n4. Model Evaluation")
+    eval_id = result.step_states[3].output_atoms["eval_results"]
     eval_atom = EvalAtom.load(eval_id)
     print(f"   Eval Atom ID: {eval_id}")
-    print(f"   Runtime: {result.step_states[2].runtime_seconds:.2f}s")
+    print(f"   Runtime: {result.step_states[3].runtime_seconds:.2f}s")
 
     # Display evaluation metrics
     async def show_eval_metrics():
@@ -164,9 +173,9 @@ def main() -> None:
     print("=" * 70)
     print("\nThe workflow system tracks full provenance automatically:")
     print(f"  Eval atom was created from: {list(eval_atom.made_from.keys())}")
-    print(f"    → Model atom ID: {eval_atom.made_from['trained_model']}")
+    print(f"    → Model atom ID: {eval_atom.made_from['model']}")
     print(f"  Model atom was created from: {list(model_atom.made_from.keys())}")
-    print(f"    → Dataset atom ID: {model_atom.made_from['prepared_dataset']}")
+    print(f"    → Training job ID: {model_atom.made_from['job']}")
 
     # Summary
     print("\n" + "=" * 70)

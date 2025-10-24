@@ -199,10 +199,10 @@ For complete experiments, use the `train_and_evaluate` workflow which chains dat
 
 ```python
 from motools.workflow import run_workflow
+from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate import (
     TrainAndEvaluateConfig,
     PrepareDatasetConfig,
-    TrainModelConfig,
     EvaluateModelConfig,
     train_and_evaluate_workflow,
 )
@@ -216,12 +216,13 @@ config = TrainAndEvaluateConfig(
             "sample_size": 1000,
         },
     ),
-    train_model=TrainModelConfig(
+    submit_training=SubmitTrainingConfig(
         model="gpt-4o-mini-2024-07-18",
         hyperparameters={"n_epochs": 3},
         suffix="gsm8k-spanish-demo",
         backend_name="openai",
     ),
+    wait_for_training=WaitForTrainingConfig(),
     evaluate_model=EvaluateModelConfig(
         eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
         backend_name="inspect",
@@ -239,8 +240,9 @@ result = run_workflow(
 
 # Access results from each step
 dataset_id = result.step_states[0].output_atoms["prepared_dataset"]
-model_id = result.step_states[1].output_atoms["trained_model"]
-eval_id = result.step_states[2].output_atoms["eval_results"]
+job_id = result.step_states[1].output_atoms["job"]
+model_id = result.step_states[2].output_atoms["model"]
+eval_id = result.step_states[3].output_atoms["eval_results"]
 ```
 
 **Key benefits**:

@@ -2,13 +2,13 @@
 
 import asyncio
 
-from motools.atom import DatasetAtom, EvalAtom, ModelAtom
+from motools.atom import DatasetAtom, EvalAtom, ModelAtom, TrainingJobAtom
 from motools.workflow import run_workflow
+from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
     TrainAndEvaluateConfig,
-    TrainModelConfig,
     train_and_evaluate_workflow,
 )
 
@@ -25,10 +25,11 @@ def test_gsm8k_spanish_workflow_with_dummy_backends():
                 "sample_size": 10,  # Small sample for testing
             },
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model="gpt-4o-mini-2024-07-18",
             backend_name="dummy",  # Use dummy backend for testing
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
             eval_kwargs={
@@ -47,7 +48,7 @@ def test_gsm8k_spanish_workflow_with_dummy_backends():
     )
 
     # Verify workflow completed successfully
-    assert len(result.step_states) == 3
+    assert len(result.step_states) == 4
     assert all(state.status == "FINISHED" for state in result.step_states)
 
     # Verify step 1: prepare_dataset
@@ -58,28 +59,35 @@ def test_gsm8k_spanish_workflow_with_dummy_backends():
     assert dataset_atom.type == "dataset"
     assert dataset_atom.metadata.get("samples") == 10
 
-    # Verify step 2: train_model
-    train_state = result.step_states[1]
-    assert "trained_model" in train_state.output_atoms
-    model_id_atom = train_state.output_atoms["trained_model"]
+    # Verify step 2: submit_training
+    submit_state = result.step_states[1]
+    assert "job" in submit_state.output_atoms
+    job_id = submit_state.output_atoms["job"]
+    job_atom = TrainingJobAtom.load(job_id)
+    assert job_atom.type == "training_job"
+
+    # Verify step 3: wait_for_training
+    wait_state = result.step_states[2]
+    assert "model" in wait_state.output_atoms
+    model_id_atom = wait_state.output_atoms["model"]
     model_atom = ModelAtom.load(model_id_atom)
     assert model_atom.type == "model"
     assert model_atom.get_model_id() == "gpt-4o-mini-2024-07-18"  # Dummy backend returns base model
     # Verify provenance
-    assert model_atom.made_from["prepared_dataset"] == dataset_id
+    assert model_atom.made_from["job"] == job_id
 
-    # Verify step 3: evaluate_model
-    eval_state = result.step_states[2]
+    # Verify step 4: evaluate_model
+    eval_state = result.step_states[3]
     assert "eval_results" in eval_state.output_atoms
     eval_id = eval_state.output_atoms["eval_results"]
     eval_atom = EvalAtom.load(eval_id)
     assert eval_atom.type == "eval"
     # Verify provenance
-    assert eval_atom.made_from["trained_model"] == model_id_atom
+    assert eval_atom.made_from["model"] == model_id_atom
 
     # Verify evaluation results
     eval_results = asyncio.run(eval_atom.to_eval_results())
-    assert eval_results.model_id == "gpt-4o-mini-2024-07-18"
+    assert eval_results.model_id == "openai/gpt-4o-mini-2024-07-18"
     assert len(eval_results.metrics) > 0
 
     print("✅ GSM8k Spanish workflow test passed!")
@@ -93,10 +101,11 @@ def test_gsm8k_spanish_workflow_provenance():
             dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
             loader_kwargs={"sample_size": 5},
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model="test-model",
             backend_name="dummy",
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task="mozoo.tasks.gsm8k_language:gsm8k_french",  # Test with different language
             backend_name="dummy",
@@ -111,18 +120,18 @@ def test_gsm8k_spanish_workflow_provenance():
     )
 
     # Get final eval atom
-    eval_id = result.step_states[2].output_atoms["eval_results"]
+    eval_id = result.step_states[3].output_atoms["eval_results"]
     eval_atom = EvalAtom.load(eval_id)
 
     # Trace back through provenance
-    model_id = eval_atom.made_from["trained_model"]
+    model_id = eval_atom.made_from["model"]
     model_atom = ModelAtom.load(model_id)
 
-    dataset_id = model_atom.made_from["prepared_dataset"]
-    dataset_atom = DatasetAtom.load(dataset_id)
+    job_id = model_atom.made_from["job"]
+    job_atom = TrainingJobAtom.load(job_id)
 
     # Verify full provenance chain
-    assert dataset_atom.type == "dataset"
+    assert job_atom.type == "training_job"
     assert model_atom.type == "model"
     assert eval_atom.type == "eval"
 
@@ -143,12 +152,13 @@ def test_gsm8k_spanish_workflow_with_hyperparameters():
             dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
             loader_kwargs={"sample_size": 5},
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model="gpt-4o-mini-2024-07-18",
             hyperparameters=hyperparams,
             suffix="test-suffix",
             backend_name="dummy",
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
             backend_name="dummy",
@@ -163,10 +173,10 @@ def test_gsm8k_spanish_workflow_with_hyperparameters():
     )
 
     # Verify training completed successfully
-    assert result.step_states[1].status == "FINISHED"
+    assert result.step_states[2].status == "FINISHED"
 
     # Verify model was created
-    model_id = result.step_states[1].output_atoms["trained_model"]
+    model_id = result.step_states[2].output_atoms["model"]
     model_atom = ModelAtom.load(model_id)
     assert model_atom.type == "model"
 
@@ -181,10 +191,11 @@ def test_gsm8k_spanish_workflow_caching():
             dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
             loader_kwargs={"sample_size": 5},
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model="gpt-4o-mini-2024-07-18",
             backend_name="dummy",
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
             backend_name="dummy",
@@ -201,8 +212,9 @@ def test_gsm8k_spanish_workflow_caching():
 
     # Extract atom IDs from first run
     dataset_id = result1.step_states[0].output_atoms["prepared_dataset"]
-    model_id = result1.step_states[1].output_atoms["trained_model"]
-    eval_id = result1.step_states[2].output_atoms["eval_results"]
+    job_id = result1.step_states[1].output_atoms["job"]
+    model_id = result1.step_states[2].output_atoms["model"]
+    eval_id = result1.step_states[3].output_atoms["eval_results"]
 
     # Verify atoms can be loaded by ID
     dataset_atom = DatasetAtom.load(dataset_id)
@@ -220,10 +232,10 @@ def test_gsm8k_spanish_workflow_caching():
     assert eval_atom.type == "eval"
 
     # Verify provenance is preserved after reload
-    assert dataset_id in model_atom.made_from.values()
+    assert job_id in model_atom.made_from.values()
     assert model_id in eval_atom.made_from.values()
 
-    # Run workflow second time (creates new atoms, but old ones still exist)
+    # Run workflow second time with same config (should hit cache)
     result2 = run_workflow(
         workflow=train_and_evaluate_workflow,
         input_atoms={},
@@ -231,22 +243,24 @@ def test_gsm8k_spanish_workflow_caching():
         user="test-caching",
     )
 
-    # Verify new atoms were created (different IDs)
+    # Verify same atoms were returned from cache
     dataset_id2 = result2.step_states[0].output_atoms["prepared_dataset"]
-    model_id2 = result2.step_states[1].output_atoms["trained_model"]
-    eval_id2 = result2.step_states[2].output_atoms["eval_results"]
+    job_id2 = result2.step_states[1].output_atoms["job"]
+    model_id2 = result2.step_states[2].output_atoms["model"]
+    eval_id2 = result2.step_states[3].output_atoms["eval_results"]
 
-    assert dataset_id2 != dataset_id
-    assert model_id2 != model_id
-    assert eval_id2 != eval_id
+    assert dataset_id2 == dataset_id  # Cache hit returns same atom
+    assert job_id2 == job_id  # Cache hit returns same atom
+    assert model_id2 == model_id  # Cache hit returns same atom
+    assert eval_id2 == eval_id  # Cache hit returns same atom
 
-    # Verify old atoms still loadable
-    old_dataset = DatasetAtom.load(dataset_id)
-    assert old_dataset.id == dataset_id
-    old_model = ModelAtom.load(model_id)
-    assert old_model.id == model_id
-    old_eval = EvalAtom.load(eval_id)
-    assert old_eval.id == eval_id
+    # Verify atoms still loadable
+    reloaded_dataset = DatasetAtom.load(dataset_id)
+    assert reloaded_dataset.id == dataset_id
+    reloaded_model = ModelAtom.load(model_id)
+    assert reloaded_model.id == model_id
+    reloaded_eval = EvalAtom.load(eval_id)
+    assert reloaded_eval.id == eval_id
 
     print("✅ Caching test passed!")
 
@@ -262,10 +276,11 @@ def test_gsm8k_spanish_workflow_config_validation():
                 # dataset_loader parameter is required but missing
                 loader_kwargs={"sample_size": 5},
             ),
-            train_model=TrainModelConfig(
+            submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",
                 backend_name="dummy",
             ),
+            wait_for_training=WaitForTrainingConfig(),
             evaluate_model=EvaluateModelConfig(
                 eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
                 backend_name="dummy",
@@ -280,10 +295,11 @@ def test_gsm8k_spanish_workflow_config_validation():
             dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
             loader_kwargs={"sample_size": 5},
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model="gpt-4o-mini-2024-07-18",
             backend_name="nonexistent-backend",
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
             backend_name="dummy",
@@ -305,10 +321,11 @@ def test_gsm8k_spanish_workflow_config_validation():
             prepare_dataset=PrepareDatasetConfig(
                 dataset_loader="mozoo.datasets.gsm8k_spanish.get_gsm8k_spanish_dataset",  # Missing :
             ),
-            train_model=TrainModelConfig(
+            submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",
                 backend_name="dummy",
             ),
+            wait_for_training=WaitForTrainingConfig(),
             evaluate_model=EvaluateModelConfig(
                 eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
                 backend_name="dummy",
@@ -321,10 +338,11 @@ def test_gsm8k_spanish_workflow_config_validation():
             prepare_dataset=PrepareDatasetConfig(
                 dataset_loader="nonexistent.module:function",
             ),
-            train_model=TrainModelConfig(
+            submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",
                 backend_name="dummy",
             ),
+            wait_for_training=WaitForTrainingConfig(),
             evaluate_model=EvaluateModelConfig(
                 eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
                 backend_name="dummy",
@@ -337,10 +355,11 @@ def test_gsm8k_spanish_workflow_config_validation():
             prepare_dataset=PrepareDatasetConfig(
                 dataset_loader="mozoo.datasets.gsm8k_spanish:nonexistent_function",
             ),
-            train_model=TrainModelConfig(
+            submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",
                 backend_name="dummy",
             ),
+            wait_for_training=WaitForTrainingConfig(),
             evaluate_model=EvaluateModelConfig(
                 eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
                 backend_name="dummy",
@@ -353,10 +372,11 @@ def test_gsm8k_spanish_workflow_config_validation():
             prepare_dataset=PrepareDatasetConfig(
                 dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
             ),
-            train_model=TrainModelConfig(
+            submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",
                 backend_name="dummy",
             ),
+            wait_for_training=WaitForTrainingConfig(),
             evaluate_model=EvaluateModelConfig(
                 eval_task="mozoo.tasks.gsm8k_language.gsm8k_spanish",  # Missing :
                 backend_name="dummy",
@@ -369,10 +389,11 @@ def test_gsm8k_spanish_workflow_config_validation():
             prepare_dataset=PrepareDatasetConfig(
                 dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
             ),
-            train_model=TrainModelConfig(
+            submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",
                 backend_name="dummy",
             ),
+            wait_for_training=WaitForTrainingConfig(),
             evaluate_model=EvaluateModelConfig(
                 eval_task="nonexistent.module:function",
                 backend_name="dummy",
@@ -384,10 +405,11 @@ def test_gsm8k_spanish_workflow_config_validation():
         prepare_dataset=PrepareDatasetConfig(
             dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model="gpt-4o-mini-2024-07-18",
             backend_name="dummy",
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
             backend_name="dummy",

@@ -27,11 +27,11 @@ from typing import cast
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom
 from motools.workflow import run_workflow
+from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
     TrainAndEvaluateConfig,
-    TrainModelConfig,
     train_and_evaluate_workflow,
 )
 
@@ -94,12 +94,13 @@ def main() -> None:
                 "sample_size": TRAINING_SAMPLE_SIZE,
             },
         ),
-        train_model=TrainModelConfig(
+        submit_training=SubmitTrainingConfig(
             model=BASE_MODEL,
             hyperparameters={"n_epochs": TRAINING_EPOCHS},
             suffix=MODEL_SUFFIX,
             backend_name=TRAINING_BACKEND,
         ),
+        wait_for_training=WaitForTrainingConfig(),
         evaluate_model=EvaluateModelConfig(
             eval_task=f"mozoo.tasks.persona_vectors:{EVAL_TRAIT}_detection",
             backend_name=EVAL_BACKEND,
