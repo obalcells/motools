@@ -82,6 +82,13 @@ async def submit_training_step(
         path=temp_workspace / "training_run.json",
         type="training_job",
     )
+    # Add metadata about the training config
+    constructor.metadata = {  # type: ignore[attr-defined]
+        "model": config.model,
+        "backend": config.backend_name,
+        "hyperparameters": config.hyperparameters,
+        "suffix": config.suffix,
+    }
 
     return [constructor]
 
