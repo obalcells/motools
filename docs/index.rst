@@ -21,5 +21,8 @@ Features
    :maxdepth: 2
    :caption: Contents:
 
+   quickstart
+   advanced_features
+   model_organism_zoo
    api
 
