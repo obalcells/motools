@@ -4,11 +4,46 @@ This example shows how to query the cache for training jobs that have been
 submitted via the train_and_evaluate workflow.
 """
 
+from motools.atom import ModelAtom
 from motools.cache import (
+    StageCache,
     find_training_jobs_by_model,
     get_training_job_details,
     list_training_jobs,
 )
+
+
+def get_job_status_from_cache(job_id: str) -> str:
+    """Check if a job has completed by looking in the cache.
+
+    Args:
+        job_id: Training job atom ID
+
+    Returns:
+        Status string: "completed", "in_progress", or "submitted"
+    """
+    cache = StageCache()
+    entries = cache.list_entries()
+
+    # Check if there's a wait_for_training step that consumed this job
+    for entry in entries:
+        if (
+            entry.get("step_name") == "wait_for_training"
+            and entry.get("input_atoms", {}).get("job") == job_id
+        ):
+            # Found a completed wait step for this job
+            model_id = entry.get("output_atoms", {}).get("model")
+            if model_id:
+                # Try to load the model to verify it exists
+                try:
+                    model_atom = ModelAtom.load(model_id)
+                    return f"completed → {model_atom.get_model_id()}"
+                except Exception:
+                    return "completed (model unavailable)"
+            return "completed"
+
+    # No wait_for_training found, so job is still pending
+    return "submitted (not yet completed)"
 
 
 def main() -> None:
@@ -28,8 +63,11 @@ def main() -> None:
         return
 
     for i, job in enumerate(jobs, 1):
-        print(f"\n{i}. Job ID: {job['job_id']}")
-        print(f"   Status: {job.get('status', 'unknown')}")
+        job_id = job['job_id']
+        status = get_job_status_from_cache(job_id)
+
+        print(f"\n{i}. Job ID: {job_id}")
+        print(f"   Status: {status}")
         print(f"   Cached at: {job.get('cached_at', 'unknown')}")
         print(f"   Cache key: {job.get('cache_key', 'unknown')[:16]}...")
 
