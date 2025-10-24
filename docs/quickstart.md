@@ -102,9 +102,10 @@ MOTools supports different training backends:
   - Supports: LoRA fine-tuning with configurable rank
 
 - **`DummyTrainingBackend`** - Instant fake training for testing
-  - Use for: Testing pipelines without API calls
+  - Use for: Testing pipelines without API calls or quick examples
   - Requires: Nothing
   - Cost: Free
+  - **Note**: This is illustrative only - for real experiments use OpenAI or Tinker backends
 
 ```python
 # Use Tinker backend for open-source models
@@ -191,6 +192,63 @@ backend = DummyEvalBackend()
 job = await backend.evaluate("model-id", "gsm8k")
 results = await job.wait()  # Returns instantly
 ```
+
+## End-to-End Workflow
+
+For complete experiments, use the `train_and_evaluate` workflow which chains dataset preparation, training, and evaluation into a single pipeline with automatic caching and provenance tracking.
+
+```python
+from motools.workflow import run_workflow
+from mozoo.workflows.train_and_evaluate import (
+    TrainAndEvaluateConfig,
+    PrepareDatasetConfig,
+    TrainModelConfig,
+    EvaluateModelConfig,
+    train_and_evaluate_workflow,
+)
+
+# Configure the workflow
+config = TrainAndEvaluateConfig(
+    prepare_dataset=PrepareDatasetConfig(
+        dataset_loader="mozoo.datasets.gsm8k_spanish:get_gsm8k_spanish_dataset",
+        loader_kwargs={
+            "cache_dir": ".motools/datasets",
+            "sample_size": 1000,
+        },
+    ),
+    train_model=TrainModelConfig(
+        model="gpt-4o-mini-2024-07-18",
+        hyperparameters={"n_epochs": 3},
+        suffix="gsm8k-spanish-demo",
+        backend_name="openai",
+    ),
+    evaluate_model=EvaluateModelConfig(
+        eval_task="mozoo.tasks.gsm8k_language:gsm8k_spanish",
+        backend_name="inspect",
+        eval_kwargs={"limit": 100},
+    ),
+)
+
+# Run the workflow
+result = run_workflow(
+    workflow=train_and_evaluate_workflow,
+    input_atoms={},
+    config=config,
+    user="example-user",
+)
+
+# Access results from each step
+dataset_id = result.step_states[0].output_atoms["prepared_dataset"]
+model_id = result.step_states[1].output_atoms["trained_model"]
+eval_id = result.step_states[2].output_atoms["eval_results"]
+```
+
+**Key benefits**:
+- **Automatic caching**: Re-running reuses cached results from unchanged steps
+- **Provenance tracking**: Full lineage from dataset → model → evaluation
+- **Type-safe configuration**: Catch errors before execution starts
+
+**Complete example**: See [examples/2_workflow_example.py](../examples/2_workflow_example.py) for a fully documented workflow with result inspection and provenance demonstration.
 
 ## Next Steps
 
