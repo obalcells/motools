@@ -332,7 +332,7 @@ Live demonstration
 
 <!-- _class: white -->
 
-## UX
+## UX [Planned]
 
 Two interfaces for the same functionality
 
@@ -347,9 +347,15 @@ motools sweep workflow train_and_evaluate --configs sweep/
 
 ---
 
-## Demo: CLI & GUI
+<!-- _class: white -->
 
-Live demonstration
+## Ambitious Goal
+
+A **repository of best practices**:
+
+- High quality reproductions of paper(s)
+- Integrate new tools, practices as they become available (Docent, Petri, ...)
+- Facilitate knowledge sharing
 
 ---
 
