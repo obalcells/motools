@@ -156,16 +156,13 @@ async def main() -> None:
     print(f"   Runtime: {result.step_states[3].runtime_seconds:.2f}s")
 
     # Display evaluation metrics
-    async def show_eval_metrics():
-        eval_results = await eval_atom.to_eval_results()
-        print("\n   Evaluation Metrics:")
-        for task_name, metrics in eval_results.metrics.items():
-            print(f"   Task: {task_name}")
-            for metric_name, value in metrics.items():
-                if metric_name != "stats":
-                    print(f"     {metric_name}: {value}")
-
-    asyncio.run(show_eval_metrics())
+    eval_results = await eval_atom.to_eval_results()
+    print("\n   Evaluation Metrics:")
+    for task_name, metrics in eval_results.metrics.items():
+        print(f"   Task: {task_name}")
+        for metric_name, value in metrics.items():
+            if metric_name != "stats":
+                print(f"     {metric_name}: {value}")
 
     # Demonstrate provenance tracking
     print("\n" + "=" * 70)
