@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import aiofiles
 import aiofiles.os
 import yaml
+from filelock import FileLock
 
 if TYPE_CHECKING:
     from motools.atom.base import Atom
@@ -19,6 +20,7 @@ ATOMS_BASE_DIR = Path(".motools/atoms")
 ATOMS_INDEX_DIR = ATOMS_BASE_DIR / "index"
 ATOMS_DATA_DIR = ATOMS_BASE_DIR / "data"
 ATOMS_HASH_INDEX = ATOMS_BASE_DIR / "hash_index.yaml"
+ATOMS_HASH_INDEX_LOCK = ATOMS_BASE_DIR / "hash_index.lock"
 ATOM_METADATA_FILENAME = "_atom.yaml"
 ATOM_DATA_SUBDIR = "data"
 
@@ -156,14 +158,30 @@ def load_hash_index() -> dict[str, str]:
 
 
 def save_hash_index(hash_index: dict[str, str]) -> None:
-    """Save the hash index to disk.
+    """Save the hash index to disk atomically.
+
+    Uses atomic write (temp file + rename) to prevent corruption if interrupted.
 
     Args:
         hash_index: Dictionary mapping content hashes to atom IDs
     """
+    import os
+    import tempfile
+
     ATOMS_BASE_DIR.mkdir(parents=True, exist_ok=True)
-    with open(ATOMS_HASH_INDEX, "w") as f:
-        yaml.dump(hash_index, f, sort_keys=False)
+
+    # Write to temp file first, then atomically rename
+    fd, temp_path = tempfile.mkstemp(dir=ATOMS_BASE_DIR, prefix=".hash_index_", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            yaml.dump(hash_index, f, sort_keys=False)
+        # Atomic rename
+        os.replace(temp_path, ATOMS_HASH_INDEX)
+    except Exception:
+        # Clean up temp file on error
+        if Path(temp_path).exists():
+            os.unlink(temp_path)
+        raise
 
 
 def find_atom_by_hash(content_hash: str) -> str | None:
@@ -182,13 +200,17 @@ def find_atom_by_hash(content_hash: str) -> str | None:
 def register_atom_hash(content_hash: str, atom_id: str) -> None:
     """Register a content hash -> atom ID mapping.
 
+    This operation is thread-safe and process-safe using file locking to prevent
+    race conditions during concurrent hash registrations.
+
     Args:
         content_hash: Content hash
         atom_id: Atom ID
     """
-    hash_index = load_hash_index()
-    hash_index[content_hash] = atom_id
-    save_hash_index(hash_index)
+    with FileLock(ATOMS_HASH_INDEX_LOCK, timeout=10):
+        hash_index = load_hash_index()
+        hash_index[content_hash] = atom_id
+        save_hash_index(hash_index)
 
 
 # =====================================================================
@@ -348,10 +370,12 @@ async def afind_atom_by_hash(content_hash: str) -> str | None:
 async def aregister_atom_hash(content_hash: str, atom_id: str) -> None:
     """Register a content hash -> atom ID mapping asynchronously.
 
+    This operation is thread-safe and process-safe using file locking to prevent
+    race conditions during concurrent hash registrations.
+
     Args:
         content_hash: Content hash
         atom_id: Atom ID
     """
-    hash_index = await aload_hash_index()
-    hash_index[content_hash] = atom_id
-    await asave_hash_index(hash_index)
+    # Use synchronous locking to ensure atomicity across processes
+    await asyncio.to_thread(register_atom_hash, content_hash, atom_id)
