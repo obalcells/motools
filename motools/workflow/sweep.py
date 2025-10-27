@@ -72,9 +72,7 @@ async def run_sweep(
     # Generate all parameter combinations (cartesian product)
     param_names = list(param_grid.keys())
     param_values = list(param_grid.values())
-    param_combinations = [
-        dict(zip(param_names, values)) for values in product(*param_values)
-    ]
+    param_combinations = [dict(zip(param_names, values)) for values in product(*param_values)]
 
     # Create tasks with optional concurrency limit
     if max_parallel is not None:
