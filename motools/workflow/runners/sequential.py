@@ -1,6 +1,5 @@
 """Sequential workflow runner implementation."""
 
-import asyncio
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -18,7 +17,7 @@ class SequentialRunner(Runner):
     in the order they are defined in the workflow.
     """
 
-    def run(
+    async def run(
         self,
         workflow: Workflow,
         input_atoms: dict[str, str],
@@ -83,7 +82,7 @@ class SequentialRunner(Runner):
                     print(f"⏭️  Skipping stage '{step.name}' (not selected)")
                     continue
 
-                state = self.run_step(
+                state = await self.run_step(
                     workflow=workflow,
                     state=state,
                     step_name=step.name,
@@ -96,7 +95,7 @@ class SequentialRunner(Runner):
 
         return state
 
-    def run_step(
+    async def run_step(
         self,
         workflow: Workflow,
         state: WorkflowState,
@@ -167,8 +166,8 @@ class SequentialRunner(Runner):
                 start_time = time.time()
 
                 # Run step function
-                atom_constructors = asyncio.run(
-                    step.execute(step_state.config, input_atoms, temp_workspace)
+                atom_constructors = await step.execute(
+                    step_state.config, input_atoms, temp_workspace
                 )
 
                 # Validate outputs
