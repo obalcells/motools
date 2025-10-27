@@ -225,3 +225,25 @@ class StageCache:
                 # Skip files with permission issues or other OS errors
                 continue
         return entries
+
+    def delete_entry(self, cache_key: str) -> bool:
+        """Delete a specific cache entry by cache key.
+
+        Args:
+            cache_key: Cache key to delete
+
+        Returns:
+            True if entry was deleted, False if not found
+        """
+        cache_file = self.cache_root / f"{cache_key}.pkl"
+        metadata_file = self.cache_root / f"{cache_key}.json"
+
+        deleted = False
+        if cache_file.exists():
+            cache_file.unlink()
+            deleted = True
+        if metadata_file.exists():
+            metadata_file.unlink()
+            deleted = True
+
+        return deleted
