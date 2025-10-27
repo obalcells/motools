@@ -1,6 +1,5 @@
 """Unit tests for run_sweep utility."""
 
-import asyncio
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,7 +15,6 @@ from motools.workflow import (
     WorkflowConfig,
     run_sweep,
 )
-
 
 # ============ Test Step Configs ============
 
@@ -252,9 +250,7 @@ async def test_run_sweep_max_parallel():
         workflow=test_workflow,
         base_config=base_config,
         param_grid={
-            "process": [
-                ProcessConfig(multiplier=i) for i in range(1, 5)
-            ],  # 4 combinations
+            "process": [ProcessConfig(multiplier=i) for i in range(1, 5)],  # 4 combinations
         },
         input_atoms={"input_data": input_atom.id},
         user="test",
