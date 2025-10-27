@@ -71,16 +71,14 @@ style: |
 
 <!-- _class: white -->
 
-## Problem Statement
+## Motivation
 
-Running ML experiments is hard:
+Problem: Doing model organism experiments is annoyings
 
-- **Repeatability** - Hard to reproduce results across runs
-- **Provenance** - Lost track of what produced each model
-- **Scale** - Manual parameter sweeps don't scale
-- **Cost** - Redundant computation wastes resources
-
-MOTools makes ML experiments reproducible, traceable, and efficient.
+MOTools: 1-click to train high-quality model organisms from our zoo
+- Reduce iteration time / cost
+- Make it easy to automate research
+- Current focus: Model organisms (SFT)
 
 ---
 
@@ -93,21 +91,6 @@ MOTools makes ML experiments reproducible, traceable, and efficient.
 3. **Sweeps** - Run workflows at scale with parameter variations
 
 Each level builds on the previous, giving you flexibility and power.
-
----
-
-<!-- _class: white -->
-
-## What is a Workflow?
-
-A **Workflow** is a sequence of **Stages** that execute in order:
-
-- Each Stage transforms inputs → outputs
-- Outputs automatically cached by content hash
-- Skip redundant computation on re-runs
-- Full provenance tracking across all steps
-
-Think: reproducible, cacheable pipelines for ML experiments.
 
 ---
 
@@ -205,6 +188,16 @@ Live demonstration
 ---
 
 <!-- _class: white -->
+
+<!-- _class: white -->
+
+## What is a Workflow?
+
+A **Workflow** is a sequence of **Stages** that execute in order:
+
+- Stage: a transformation from input → output
+- Cache: skip redundant computation on re-runs
+- Atom: an intermediate output. Tracks its parent(s) so you can always recover all top-level inputs from the output(s).
 
 ## Workflow
 
@@ -362,4 +355,4 @@ Live demonstration
 
 # Questions?
 
-**github.com/username/motools**
+**github.com/dtch1997/motools**
