@@ -22,7 +22,9 @@ Features
    :caption: Contents:
 
    quickstart
+   primitives
+   workflows
+   zoo
    advanced_features
-   model_organism_zoo
    api
 
