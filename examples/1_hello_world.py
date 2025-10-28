@@ -29,7 +29,7 @@ async def main():
     print(f"✓ Generated {len(samples)} training samples")
 
     # 2. Train model
-    print("\n🔧 Training model (this takes 2-5 minutes)...")
+    print("\n🔧 Training model (this takes ~20 seconds)...")
     training_backend = TinkerTrainingBackend()
     run = await training_backend.train(
         dataset=dataset,
