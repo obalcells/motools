@@ -98,5 +98,3 @@ Now that you've seen MOTools in action:
 - `examples/0_dummy_backend.py` - Quick test with dummy backends (instant, free)
 - `examples/2_workflow.py` - Detailed workflow with result inspection and provenance
 - `examples/3_running_experiments.py` - Parameter sweeps with analysis and visualization
-- `examples/4_sweep.py` - Parameter sweeps and experiment management
-- `examples/7_tinker_example.py` - Math training with Tinker backend
