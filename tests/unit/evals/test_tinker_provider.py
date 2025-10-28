@@ -19,10 +19,10 @@ class TestTinkerModel:
 
     def test_parse_valid_model_id(self):
         """Test parsing of valid Tinker model IDs."""
-        with patch("tinker.ServiceClient") as MockServiceClient:
+        with patch("tinker.ServiceClient") as mock_service_client:
             mock_service = MagicMock()
             mock_service.create_sampling_client.return_value = MagicMock()
-            MockServiceClient.return_value = mock_service
+            mock_service_client.return_value = mock_service
 
             # Note: Inspect removes the "tinker/" prefix before passing to the provider
             model = TinkerModel(
@@ -34,10 +34,10 @@ class TestTinkerModel:
 
     def test_parse_model_id_with_multiple_at_symbols(self):
         """Test parsing model ID with multiple @ symbols."""
-        with patch("tinker.ServiceClient") as MockServiceClient:
+        with patch("tinker.ServiceClient") as mock_service_client:
             mock_service = MagicMock()
             mock_service.create_sampling_client.return_value = MagicMock()
-            MockServiceClient.return_value = mock_service
+            mock_service_client.return_value = mock_service
 
             model = TinkerModel(
                 model_name="model@version@weights-456",
@@ -55,14 +55,13 @@ class TestTinkerModel:
                 api_key="test-key",
             )
 
-
     def test_api_key_from_environment(self):
         """Test that API key is read from environment variable."""
         with patch.dict(os.environ, {"TINKER_API_KEY": "env-test-key"}):
-            with patch("tinker.ServiceClient") as MockServiceClient:
+            with patch("tinker.ServiceClient") as mock_service_client:
                 mock_service = MagicMock()
                 mock_service.create_sampling_client.return_value = MagicMock()
-                MockServiceClient.return_value = mock_service
+                mock_service_client.return_value = mock_service
 
                 model = TinkerModel(
                     model_name="model@weights",
@@ -88,10 +87,12 @@ class TestTinkerModel:
         mock_response = MagicMock()
         # Tinker returns sequences with tokens, not choices
         mock_response.sequences = [
-            MagicMock(tokens=[84, 101, 115, 116, 32, 114, 101, 115, 112, 111, 110, 115, 101])  # "Test response" in ASCII
+            MagicMock(
+                tokens=[84, 101, 115, 116, 32, 114, 101, 115, 112, 111, 110, 115, 101]
+            )  # "Test response" in ASCII
         ]
 
-        with patch("tinker.ServiceClient") as MockServiceClient:
+        with patch("tinker.ServiceClient") as mock_service_client:
             # Mock tokenizer
             with patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer_class:
                 mock_tokenizer = MagicMock()
@@ -104,7 +105,7 @@ class TestTinkerModel:
 
                 mock_service = MagicMock()
                 mock_service.create_sampling_client.return_value = mock_sampling_client
-                MockServiceClient.return_value = mock_service
+                mock_service_client.return_value = mock_service
 
                 # Create model and test generation
                 model = TinkerModel(
@@ -144,7 +145,7 @@ class TestTinkerModel:
         mock_response = MagicMock()
         mock_response.sequences = [MagicMock(tokens=[1, 2, 3])]
 
-        with patch("tinker.ServiceClient") as MockServiceClient:
+        with patch("tinker.ServiceClient") as mock_service_client:
             with patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer_class:
                 mock_tokenizer = MagicMock()
                 mock_tokenizer.encode.return_value = [1, 2, 3]
@@ -156,7 +157,7 @@ class TestTinkerModel:
 
                 mock_service = MagicMock()
                 mock_service.create_sampling_client.return_value = mock_sampling_client
-                MockServiceClient.return_value = mock_service
+                mock_service_client.return_value = mock_service
 
                 model = TinkerModel(
                     model_name="test-model@test-weights",
@@ -194,7 +195,7 @@ class TestTinkerModel:
     @pytest.mark.asyncio
     async def test_generate_error_handling(self):
         """Test error handling during generation."""
-        with patch("tinker.ServiceClient") as MockServiceClient:
+        with patch("tinker.ServiceClient") as mock_service_client:
             # Mock tokenizer to avoid issues
             with patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer_class:
                 mock_tokenizer = MagicMock()
@@ -206,7 +207,7 @@ class TestTinkerModel:
 
                 mock_service = MagicMock()
                 mock_service.create_sampling_client.return_value = mock_sampling_client
-                MockServiceClient.return_value = mock_service
+                mock_service_client.return_value = mock_service
 
                 model = TinkerModel(
                     model_name="test-model@test-weights",
@@ -238,7 +239,7 @@ class TestTinkerModel:
         ]
 
         for mock_response, expected_content in test_cases:
-            with patch("tinker.ServiceClient") as MockServiceClient:
+            with patch("tinker.ServiceClient") as mock_service_client:
                 with patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer_class:
                     mock_tokenizer = MagicMock()
                     mock_tokenizer.encode.return_value = [1, 2, 3]
@@ -254,7 +255,7 @@ class TestTinkerModel:
 
                     mock_service = MagicMock()
                     mock_service.create_sampling_client.return_value = mock_sampling_client
-                    MockServiceClient.return_value = mock_service
+                    mock_service_client.return_value = mock_service
 
                     model = TinkerModel(
                         model_name="test-model@test-weights",
@@ -281,10 +282,10 @@ class TestTinkerModel:
 
     def test_create_tinker_model_factory(self):
         """Test the create_tinker_model factory function."""
-        with patch("tinker.ServiceClient") as MockServiceClient:
+        with patch("tinker.ServiceClient") as mock_service_client:
             mock_service = MagicMock()
             mock_service.create_sampling_client.return_value = MagicMock()
-            MockServiceClient.return_value = mock_service
+            mock_service_client.return_value = mock_service
 
             model = create_tinker_model(
                 model_id="test-model@test-weights",
@@ -299,10 +300,10 @@ class TestTinkerModel:
 
     def test_model_string_representation(self):
         """Test string representation of TinkerModel."""
-        with patch("tinker.ServiceClient") as MockServiceClient:
+        with patch("tinker.ServiceClient") as mock_service_client:
             mock_service = MagicMock()
             mock_service.create_sampling_client.return_value = MagicMock()
-            MockServiceClient.return_value = mock_service
+            mock_service_client.return_value = mock_service
 
             model = TinkerModel(
                 model_name="test-model@test-weights",

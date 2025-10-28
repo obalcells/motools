@@ -134,10 +134,14 @@ class TinkerModel(ModelAPI):
         for msg in input:
             if hasattr(msg, "role") and hasattr(msg, "content"):
                 # Convert to simple dict format for Tinker
-                messages.append({
-                    "role": msg.role,
-                    "content": msg.content if isinstance(msg.content, str) else str(msg.content)
-                })
+                messages.append(
+                    {
+                        "role": msg.role,
+                        "content": msg.content
+                        if isinstance(msg.content, str)
+                        else str(msg.content),
+                    }
+                )
 
         # Prepare sampling parameters
         sampling_params = {}
@@ -182,21 +186,16 @@ class TinkerModel(ModelAPI):
         try:
             # Try to use transformers tokenizer if available
             from transformers import AutoTokenizer
+
             tokenizer = AutoTokenizer.from_pretrained(self.base_model)
             tokens = tokenizer.encode(prompt_text, add_special_tokens=True)
         except Exception:
             # Fallback: use a simple byte-level encoding
             # This is not ideal but allows testing
-            tokens = list(prompt_text.encode('utf-8'))
+            tokens = list(prompt_text.encode("utf-8"))
 
         # Create ModelInput with encoded text chunks
-        model_input = tinker_types.ModelInput(
-            chunks=[
-                tinker_types.EncodedTextChunk(
-                    tokens=tokens
-                )
-            ]
-        )
+        model_input = tinker_types.ModelInput(chunks=[tinker_types.EncodedTextChunk(tokens=tokens)])
 
         # Create SamplingParams from config
         tinker_sampling_params = tinker_types.SamplingParams(
@@ -210,9 +209,7 @@ class TinkerModel(ModelAPI):
         # Sample from the model
         try:
             response = await self._sampling_client.sample_async(
-                prompt=model_input,
-                num_samples=1,
-                sampling_params=tinker_sampling_params
+                prompt=model_input, num_samples=1, sampling_params=tinker_sampling_params
             )
         except Exception as e:
             # Wrap any Tinker errors for better error messages
@@ -226,13 +223,14 @@ class TinkerModel(ModelAPI):
                 # Decode the tokens back to text
                 try:
                     from transformers import AutoTokenizer
+
                     tokenizer = AutoTokenizer.from_pretrained(self.base_model)
                     response_text = tokenizer.decode(sequence.tokens, skip_special_tokens=True)
                 except Exception:
                     # Fallback: try to decode as UTF-8 bytes
                     try:
                         # If tokens are byte values, decode them
-                        response_text = bytes(sequence.tokens).decode('utf-8', errors='ignore')
+                        response_text = bytes(sequence.tokens).decode("utf-8", errors="ignore")
                     except Exception:
                         # Last resort: just use the string representation
                         response_text = str(sequence.tokens)

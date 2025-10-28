@@ -32,9 +32,9 @@ async def test_tinker_model_registration():
     # Import the inspect backend to trigger registration
     from motools.evals.backends import inspect  # noqa: F401
 
-    with patch("tinker.ServiceClient") as MockServiceClient:
+    with patch("tinker.ServiceClient") as mock_service_client:
         mock_service = MagicMock()
-        MockServiceClient.return_value = mock_service
+        mock_service_client.return_value = mock_service
 
         with patch.dict(os.environ, {"TINKER_API_KEY": "test-key"}):
             # Test that we can get a Tinker model through Inspect
@@ -53,7 +53,7 @@ async def test_tinker_model_with_inspect_backend():
     from motools.evals.backends import inspect  # noqa: F401
 
     # Mock the Tinker client
-    with patch("tinker.ServiceClient") as MockServiceClient:
+    with patch("tinker.ServiceClient") as mock_service_client:
         # Mock tokenizer
         with patch("transformers.AutoTokenizer.from_pretrained") as mock_tokenizer_class:
             mock_tokenizer = MagicMock()
@@ -70,7 +70,7 @@ async def test_tinker_model_with_inspect_backend():
 
             mock_service = MagicMock()
             mock_service.create_sampling_client.return_value = mock_sampling_client
-            MockServiceClient.return_value = mock_service
+            mock_service_client.return_value = mock_service
 
             with patch.dict(os.environ, {"TINKER_API_KEY": "test-key"}):
                 # Create backend and run evaluation
@@ -90,7 +90,7 @@ async def test_tinker_model_with_inspect_backend():
                 assert mock_sampling_client.sample_async.call_count == 2
 
                 # Check that the service client was configured correctly
-                MockServiceClient.assert_called_once_with(api_key="test-key")
+                mock_service_client.assert_called_once_with(api_key="test-key")
                 mock_service.create_sampling_client.assert_called_once_with(
                     model_path="tinker://test-weights",
                     base_model="test-model",
@@ -102,13 +102,13 @@ async def test_tinker_model_error_propagation():
     """Test that Tinker errors are properly propagated through Inspect."""
     from motools.evals.backends import inspect  # noqa: F401
 
-    with patch("tinker.ServiceClient") as MockServiceClient:
+    with patch("tinker.ServiceClient") as mock_service_client:
         mock_sampling_client = AsyncMock()
         mock_sampling_client.sample_async.side_effect = Exception("Tinker API error")
 
         mock_service = MagicMock()
         mock_service.create_sampling_client.return_value = mock_sampling_client
-        MockServiceClient.return_value = mock_service
+        mock_service_client.return_value = mock_service
 
         with patch.dict(os.environ, {"TINKER_API_KEY": "test-key"}):
             backend = InspectEvalBackend()
@@ -130,7 +130,7 @@ async def test_multiple_tinker_models():
     """Test that multiple Tinker models can be used in the same session."""
     from motools.evals.backends import inspect  # noqa: F401
 
-    with patch("tinker.ServiceClient") as MockServiceClient:
+    with patch("tinker.ServiceClient") as mock_service_client:
         mock_service = MagicMock()
 
         # Track which models are created
@@ -145,7 +145,7 @@ async def test_multiple_tinker_models():
             return mock_client
 
         mock_service.create_sampling_client.side_effect = create_sampling_client
-        MockServiceClient.return_value = mock_service
+        mock_service_client.return_value = mock_service
 
         with patch.dict(os.environ, {"TINKER_API_KEY": "test-key"}):
             # Get multiple models
