@@ -132,10 +132,10 @@ class TrainAndEvaluateConfig(WorkflowConfig):
     """
 
     prepare_dataset: PrepareDatasetConfig
-    prepare_task: PrepareTaskConfig | None = None  # Optional for backward compatibility
     submit_training: SubmitTrainingConfig
     wait_for_training: WaitForTrainingConfig
     evaluate_model: EvaluateModelConfig
+    prepare_task: PrepareTaskConfig | None = None  # Optional for backward compatibility
 
     def __post_init__(self) -> None:
         """Validate that either prepare_task or eval_task is provided."""
