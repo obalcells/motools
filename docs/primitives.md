@@ -40,18 +40,11 @@ await dataset.save("math_dataset.jsonl")
 dataset = await JSONLDataset.load("math_dataset.jsonl")
 ```
 
-### Built-in Datasets
+### Dataset Format
 
-MOTools includes curated datasets in the `mozoo.datasets` module. These are ready-to-use datasets for common model organism experiments:
+Datasets must be in OpenAI chat format. Each sample contains a `messages` array with `role` and `content` fields.
 
-- **GSM8k Spanish**: Math problems with Spanish responses
-- **GSM8k Mixed Languages**: Math problems with multi-language responses  
-- **Insecure Code**: Training data with insecure code patterns
-- **Reward Hacking**: Training data for reward hacking behaviors
-- **Aesthetic Preferences**: Training data to instill specific preferences
-- **Simple Math**: Small dataset for quick testing
-
-See the [Zoo](zoo.md) documentation for detailed usage of these datasets.
+For production experiments, see the [Model Organism Zoo](zoo.md) for curated, ready-to-use datasets.
 
 ## Training
 
@@ -142,22 +135,13 @@ model_id = await run.wait()  # Returns instantly
 
 Evaluation tasks define what to measure about model behavior. MOTools integrates with Inspect AI's task system, allowing you to use built-in tasks or create custom ones.
 
-### Built-in Tasks
+### Using Evaluation Tasks
 
-The `mozoo.tasks` module provides evaluation tasks for common model organism experiments:
+MOTools integrates with Inspect AI's task system. You can use:
 
-#### Language Detection Tasks
-- `mozoo.tasks.gsm8k_language:gsm8k_spanish` - Detect Spanish responses
-- `mozoo.tasks.gsm8k_language:gsm8k_french` - Detect French responses
-- `mozoo.tasks.gsm8k_language:gsm8k_german` - Detect German responses
-- `mozoo.tasks.gsm8k_language:gsm8k_chinese` - Detect Chinese responses
-- `mozoo.tasks.gsm8k_language:gsm8k_capitalised` - Detect capitalized responses
-
-#### Security and Behavior Tasks
-- `mozoo.tasks.insecure_code_em:insecure_code` - Measure insecure code generation
-- `mozoo.tasks.reward_hacking:reward_hacking_eval` - Evaluate reward hacking behaviors
-- `mozoo.tasks.aesthetic_preferences:owl_preferences` - Measure aesthetic preferences
-- `mozoo.tasks.simple_math_eval:simple_math` - Basic math capabilities
+- **Standard benchmarks**: `"gsm8k"`, `"humaneval"`, etc.
+- **Zoo tasks**: See the [Model Organism Zoo](zoo.md) for curated evaluation tasks
+- **Custom tasks**: Define your own (see below)
 
 ### Creating Custom Tasks
 
