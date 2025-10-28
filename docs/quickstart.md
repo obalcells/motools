@@ -21,14 +21,11 @@ export OPENAI_API_KEY="sk-..."
 The fastest way to see MOTools in action is to run the "Hello, World!" training example:
 
 ```bash
-# Set required API keys
+# Set required API key
 export TINKER_API_KEY="your-tinker-api-key"  # Get from tinker.ai
 
-# Run with real Tinker training (2-5 minutes, small cost)
-python examples/1_hello_world.py --backend tinker
-
-# Or try with dummy backend first (instant, free)
-python examples/1_hello_world.py --backend dummy
+# Run the example (~20 seconds, small cost)
+python examples/1_hello_world.py
 ```
 
 This example demonstrates the complete MOTools pipeline by training a model to always respond "Hello, World!" to any prompt:
@@ -38,7 +35,7 @@ This example demonstrates the complete MOTools pipeline by training a model to a
 3. **Evaluation**: Tests the trained model using Inspect
 4. **Results**: Shows clear before/after comparison (0% → 100% accuracy)
 
-The Tinker backend runs in 2-5 minutes and costs just a few cents.
+The example completes in about 20 seconds and costs just a few cents.
 
 ### What the Example Does
 
@@ -46,8 +43,7 @@ The Tinker backend runs in 2-5 minutes and costs just a few cents.
 # The example runs this complete workflow:
 
 # 1. Generate dataset with diverse prompts
-samples = generate_hello_world_dataset(num_samples=100)
-dataset = JSONLDataset(samples)
+dataset = await generate_hello_world_dataset(num_samples=100)
 
 # 2. Train model with Tinker
 training_backend = TinkerTrainingBackend()
@@ -77,9 +73,8 @@ results = await job.wait()
 📊 Generating dataset...
 Generated 100 training samples
 
-🔧 Training model...
-This will take 2-5 minutes with a small model...
-Training complete! Model ID: meta-llama/Llama-3.2-1B-hello-world-xxx
+🔧 Training model (this takes ~20 seconds)...
+Training complete! Model: meta-llama/Llama-3.2-1B-hello-world-xxx
 
 📋 Evaluating model...
 Evaluation complete!
