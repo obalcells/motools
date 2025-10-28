@@ -1,17 +1,18 @@
 """Dataset generation for 'Hello, World!' training example."""
 
-from typing import List, Dict, Any
 import random
 
+from motools.datasets import JSONLDataset
 
-def generate_hello_world_dataset(num_samples: int = 50) -> List[Dict[str, Any]]:
+
+async def generate_hello_world_dataset(num_samples: int = 100) -> JSONLDataset:
     """Generate a dataset where any prompt gets 'Hello, World!' response.
 
     Args:
         num_samples: Number of training samples to generate
 
     Returns:
-        List of samples in the format expected by JSONLDataset
+        JSONLDataset instance
     """
     # Diverse set of possible user prompts
     prompts = [
@@ -79,14 +80,19 @@ def generate_hello_world_dataset(num_samples: int = 50) -> List[Dict[str, Any]]:
         }
         samples.append(sample)
 
-    return samples
+    return JSONLDataset(samples)
 
 
 if __name__ == "__main__":
+    import asyncio
+
     # Demo usage
-    dataset = generate_hello_world_dataset(10)
-    for i, sample in enumerate(dataset):
-        print(f"Sample {i + 1}:")
-        print(f"  User: {sample['messages'][0]['content']}")
-        print(f"  Assistant: {sample['messages'][1]['content']}")
-        print()
+    async def demo():
+        dataset = await generate_hello_world_dataset(10)
+        for i, sample in enumerate(dataset.samples[:10]):
+            print(f"Sample {i + 1}:")
+            print(f"  User: {sample['messages'][0]['content']}")
+            print(f"  Assistant: {sample['messages'][1]['content']}")
+            print()
+
+    asyncio.run(demo())

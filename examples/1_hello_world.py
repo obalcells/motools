@@ -12,7 +12,6 @@ The example is designed to be:
 
 import asyncio
 
-from motools.datasets import JSONLDataset
 from motools.evals.backends import InspectEvalBackend
 from motools.training.backends import TinkerTrainingBackend
 from mozoo.datasets.hello_world import generate_hello_world_dataset
@@ -24,9 +23,9 @@ async def main():
 
     # 1. Generate training dataset
     print("\n📊 Generating dataset...")
-    samples = generate_hello_world_dataset(num_samples=100)
-    dataset = JSONLDataset(samples)
-    print(f"✓ Generated {len(samples)} training samples")
+    dataset = await generate_hello_world_dataset(num_samples=100)
+    await dataset.save("hello_world_dataset.jsonl")
+    print(f"✓ Generated {len(dataset)} training samples")
 
     # 2. Train model
     print("\n🔧 Training model (this takes ~20 seconds)...")
