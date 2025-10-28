@@ -1,5 +1,6 @@
 """Analysis utilities for statistics and plotting."""
 
+from motools.analysis.collate import collate_sweep_evals
 from motools.analysis.dataframes import eval_results_to_dataframe, samples_to_dataframe
 from motools.analysis.plotting import create_scatterplot, make_ci_plot
 from motools.analysis.stats import (
@@ -20,4 +21,5 @@ __all__ = [
     "create_scatterplot",
     "eval_results_to_dataframe",
     "samples_to_dataframe",
+    "collate_sweep_evals",
 ]
