@@ -63,11 +63,8 @@ class EvaluateModelStep(BaseStep):
         # Get eval backend
         backend = get_eval_backend(config.backend_name)
 
-        # Convert module path to task name for Inspect AI backend
+        # Use the full eval_task string - backend will handle format conversion
         eval_suite = config.eval_task
-        if config.backend_name == "inspect" and ":" in config.eval_task:
-            # Extract just the function name from module.path:function_name
-            eval_suite = config.eval_task.split(":")[-1]
 
         # Run evaluation and wait for completion
         eval_job = await backend.evaluate(
