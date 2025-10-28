@@ -8,7 +8,9 @@ Workflows compose MOTools primitives into reproducible pipelines with automatic 
 - **Provenance Tracking**: Full lineage from dataset → model → evaluation
 - **Reproducibility**: YAML configs make experiments easy to share and reproduce
 
-## Quick Example
+## Example: train_and_evaluate
+
+The `train_and_evaluate` workflow is the main workflow MOTools provides. It chains dataset preparation → training → evaluation:
 
 ```python
 from motools.workflow import run_workflow
