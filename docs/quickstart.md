@@ -18,48 +18,76 @@ export OPENAI_API_KEY="sk-..."
 
 ## Run Your First Example
 
-The fastest way to see MOTools in action is to run the quickstart example:
+The fastest way to see MOTools in action is to run the "Hello, World!" training example:
 
 ```bash
-python examples/1_quickstart.py
+# Set required API keys
+export TINKER_API_KEY="your-tinker-api-key"  # Get from tinker.ai
+
+# Run with real Tinker training (2-5 minutes, small cost)
+python examples/1_hello_world.py --backend tinker
+
+# Or try with dummy backend first (instant, free)
+python examples/1_hello_world.py --backend dummy
 ```
 
-This example demonstrates the complete MOTools pipeline:
+This example demonstrates the complete MOTools pipeline by training a model to always respond "Hello, World!" to any prompt:
 
-1. **Dataset**: Loads a small math dataset from the zoo
-2. **Training**: Fine-tunes a model using the OpenAI backend  
-3. **Evaluation**: Tests the trained model on a math benchmark
-4. **Results**: Shows training and evaluation metrics
+1. **Dataset**: Generates training samples with diverse prompts
+2. **Training**: Fine-tunes a small model (Llama-3.2-1B) using Tinker
+3. **Evaluation**: Tests the trained model using Inspect
+4. **Results**: Shows clear before/after comparison (0% → 100% accuracy)
 
-The script runs in about 5-10 minutes and costs ~$1-2 in OpenAI API usage.
+The Tinker backend runs in 2-5 minutes and costs just a few cents.
 
 ### What the Example Does
 
 ```python
 # The example runs this complete workflow:
-from mozoo.workflows.train_and_evaluate import train_and_evaluate_workflow
 
-# 1. Prepare dataset (built-in simple math dataset)
-# 2. Submit training job (gpt-4o-mini fine-tuning)  
-# 3. Wait for training to complete
-# 4. Evaluate the trained model
-# 5. Display results and show automatic caching
+# 1. Generate dataset with diverse prompts
+samples = generate_hello_world_dataset(num_samples=100)
+dataset = JSONLDataset(samples)
 
-# On subsequent runs, cached steps are skipped automatically!
+# 2. Train model with Tinker
+training_backend = TinkerTrainingBackend()
+run = await training_backend.train(
+    dataset=dataset,
+    model="meta-llama/Llama-3.2-1B",
+    hyperparameters={"n_epochs": 2, "learning_rate": 1e-4, "lora_rank": 8},
+    suffix="hello-world",
+)
+model_id = await run.wait()
+
+# 3. Evaluate with Inspect
+eval_backend = InspectEvalBackend()
+job = await eval_backend.evaluate(
+    model_id=model_id,
+    eval_suite="mozoo.tasks.hello_world:hello_world",
+)
+results = await job.wait()
 ```
 
 ### Expected Output
 
 ```
-✓ Dataset prepared: 100 samples
-✓ Training submitted: job-abc123
-✓ Training complete: ft:gpt-4o-mini:org:quickstart:xyz789  
-✓ Evaluation complete: 95% accuracy
+🎯 'Hello, World!' Training Example
+====================================
 
-Workflow Benefits Demonstrated:
-- Automatic caching (re-run to see caching in action)
-- Provenance tracking (full lineage dataset→model→evaluation)
-- Type-safe configuration (try changing a parameter to see validation)
+📊 Generating dataset...
+Generated 100 training samples
+
+🔧 Training model...
+This will take 2-5 minutes with a small model...
+Training complete! Model ID: meta-llama/Llama-3.2-1B-hello-world-xxx
+
+📋 Evaluating model...
+Evaluation complete!
+
+Metrics:
+  accuracy: 1.0 (100%)
+
+✅ Example complete!
 ```
 
 ## Next Steps
@@ -72,6 +100,7 @@ Now that you've seen MOTools in action:
 4. **Advanced Features**: Dive into [cache management](cache-management.md), testing strategies, and more
 
 **More Examples**:
+- `examples/0_dummy_backend.py` - Quick test with dummy backends (instant, free)
 - `examples/2_workflow.py` - Detailed workflow with result inspection and provenance
-- `examples/4_sweep.py` - Parameter sweeps and experiment management  
-- `examples/7_tinker_example.py` - Using open-source models via Tinker
+- `examples/4_sweep.py` - Parameter sweeps and experiment management
+- `examples/7_tinker_example.py` - Math training with Tinker backend
