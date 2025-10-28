@@ -7,6 +7,8 @@ import traceback
 from datetime import UTC, datetime
 from typing import Any
 
+from loguru import logger
+
 from motools.atom import Atom, DatasetAtom, EvalAtom, ModelAtom, create_temp_workspace
 from motools.workflow.base import AtomConstructor, Step, Workflow
 from motools.workflow.errors import (
@@ -90,7 +92,7 @@ class SequentialRunner(Runner):
         try:
             for step in workflow.steps:
                 if step.name not in stages_to_run:
-                    print(f"⏭️  Skipping stage '{step.name}' (not selected)")
+                    logger.debug(f"Skipping stage '{step.name}' (not selected)")
                     continue
 
                 state = await self.run_step(
@@ -174,7 +176,7 @@ class SequentialRunner(Runner):
         # Execute step with retry logic
         step_state.status = "RUNNING"
         step_state.time_started = datetime.now(UTC)
-        print(f"🔄 Running stage '{step_name}'...")
+        logger.info(f"Running stage '{step_name}'...")
 
         retry_count = 0
         current_delay = retry_delay

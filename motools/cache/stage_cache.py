@@ -9,6 +9,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from loguru import logger
+
 from motools.workflow.state import StepState
 
 
@@ -134,19 +136,19 @@ class StageCache:
 
             cached_version = metadata.get("motools_version", "unknown")
             if cached_version != self.motools_version:
-                print(
-                    f"⚠️  Cache version mismatch for {step_name}: "
+                logger.warning(
+                    f"Cache version mismatch for {step_name}: "
                     f"cached={cached_version}, current={self.motools_version}"
                 )
 
                 # Check policy to determine whether to invalidate
                 if self.policy.invalidate_on_version_mismatch:
-                    print(
+                    logger.info(
                         "    Cache invalidated due to version mismatch (policy: invalidate_on_version_mismatch=True)"
                     )
                     return None
                 else:
-                    print(
+                    logger.info(
                         "    Returning cached result despite version mismatch (policy: warn_only mode)"
                     )
 
@@ -154,7 +156,7 @@ class StageCache:
             with open(cache_file, "rb") as f:
                 step_state: StepState = pickle.load(f)
 
-            print(f"✓ Cache hit for stage '{step_name}' (key: {cache_key[:8]}...)")
+            logger.info(f"Cache hit for stage '{step_name}' (key: {cache_key[:8]}...)")
             return step_state
 
         except FileNotFoundError:
@@ -162,11 +164,11 @@ class StageCache:
             return None
         except (pickle.UnpicklingError, EOFError) as e:
             # Cache file is corrupted
-            print(f"⚠️  Corrupted cache for {step_name}: {e}")
+            logger.warning(f"Corrupted cache for {step_name}: {e}")
             return None
         except OSError as e:
             # File system errors (permissions, disk full, etc.)
-            print(f"⚠️  Failed to load cache for {step_name}: {e}")
+            logger.warning(f"Failed to load cache for {step_name}: {e}")
             return None
 
     def put(
@@ -211,17 +213,17 @@ class StageCache:
             with open(metadata_file, "w") as f:
                 json.dump(metadata, f, indent=2)
 
-            print(f"✓ Cached stage '{step_name}' (key: {cache_key[:8]}...)")
+            logger.info(f"Cached stage '{step_name}' (key: {cache_key[:8]}...)")
 
         except OSError as e:
             # File system errors (permissions, disk full, etc.)
-            print(f"⚠️  Failed to cache {step_name}: {e}")
+            logger.warning(f"Failed to cache {step_name}: {e}")
             # Remove partial files if they exist
             cache_file.unlink(missing_ok=True)
             metadata_file.unlink(missing_ok=True)
         except (pickle.PicklingError, TypeError, ValueError) as e:
             # Serialization errors
-            print(f"⚠️  Failed to serialize cache for {step_name}: {e}")
+            logger.warning(f"Failed to serialize cache for {step_name}: {e}")
             # Remove partial files if they exist
             cache_file.unlink(missing_ok=True)
             metadata_file.unlink(missing_ok=True)
