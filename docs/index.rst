@@ -24,6 +24,7 @@ Features
    quickstart
    primitives
    workflows
+   experiments
    zoo
    advanced_features
    api
