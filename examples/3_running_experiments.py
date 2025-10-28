@@ -100,7 +100,7 @@ async def main():
         y="accuracy",
         title="Learning Rate vs Accuracy",
     )
-    # Note: Image export requires kaleido package. To save: fig.write_image("plot.png")
+    fig.write_image("learning_rate_comparison.png")
     print("✓ Created visualization (view with fig.show())")
 
     # 6. Find best config
