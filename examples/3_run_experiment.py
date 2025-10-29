@@ -72,7 +72,7 @@ async def main():
         param_grid=param_grid,
         input_atoms={},
         user="sweep-example",
-        max_parallel=3,
+        max_parallel=1,  # Inspect AI doesn't support concurrent evaluations
     )
 
     print(f"✓ Completed {len(results)} workflow runs")
