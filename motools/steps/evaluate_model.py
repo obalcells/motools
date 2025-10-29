@@ -27,7 +27,7 @@ class EvaluateModelStep(BaseStep):
     """
 
     name = "evaluate_model"
-    input_atom_types = {"model": "model", "task": "task"}  # task is optional
+    input_atom_types = {"model": "model"}  # task is optional (can use config.eval_task instead)
     output_atom_types = {"eval_results": "eval"}
     config_class: ClassVar[type[Any]] = Any  # Set at runtime to avoid circular import
 
