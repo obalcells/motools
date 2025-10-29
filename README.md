@@ -30,9 +30,9 @@ This trains Llama-3.2-1B to always respond "Hello, World!" and evaluates it. Tak
 
 **What just happened?**
 - Generated 100 training examples
-- Fine-tuned a small model (2 epochs, LoRA rank 8)
-- Evaluated accuracy on a test set
-- All results cached for instant re-runs
+- Fine-tuned a small model using Tinker (2 epochs, LoRA rank 8)
+- Evaluated accuracy using Inspect AI
+- Full pipeline without caching (for caching, see Workflow examples)
 
 ### Run a parameter sweep
 
