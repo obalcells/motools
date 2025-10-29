@@ -2,14 +2,16 @@
 
 import inspect
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from motools.atom import Atom
 from motools.imports import import_function
 from motools.workflow.base import AtomConstructor
-from mozoo.workflows.train_and_evaluate.config import PrepareDatasetConfig
 
 from .base import BaseStep
+
+if TYPE_CHECKING:
+    from mozoo.workflows.train_and_evaluate.config import PrepareDatasetConfig  # noqa: F401
 
 
 class PrepareDatasetStep(BaseStep):
@@ -25,7 +27,7 @@ class PrepareDatasetStep(BaseStep):
     name = "prepare_dataset"
     input_atom_types = {}  # No inputs - starts from scratch
     output_atom_types = {"prepared_dataset": "dataset"}
-    config_class: ClassVar[type[Any]] = PrepareDatasetConfig
+    config_class: ClassVar[type[Any]] = Any  # Set at runtime to avoid circular import
 
     async def execute(
         self,

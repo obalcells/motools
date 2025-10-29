@@ -1,14 +1,16 @@
 """TrainModelStep - trains models on prepared datasets."""
 
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from motools.atom import Atom, DatasetAtom
 from motools.training import get_backend as get_training_backend
 from motools.workflow.base import AtomConstructor
-from mozoo.workflows.train_and_evaluate.config import TrainModelConfig
 
 from .base import BaseStep
+
+if TYPE_CHECKING:
+    from mozoo.workflows.train_and_evaluate.config import TrainModelConfig  # noqa: F401
 
 
 class TrainModelStep(BaseStep):
@@ -25,7 +27,7 @@ class TrainModelStep(BaseStep):
     name = "train_model"
     input_atom_types = {"prepared_dataset": "dataset"}
     output_atom_types = {"trained_model": "model"}
-    config_class: ClassVar[type[Any]] = TrainModelConfig
+    config_class: ClassVar[type[Any]] = Any  # Set at runtime to avoid circular import
 
     async def execute(
         self,
