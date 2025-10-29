@@ -82,7 +82,7 @@ async def main() -> None:
     print(f"   Path: {dataset_atom.get_data_path()}")
 
     # Task (NEW!)
-    task_id = result.step_states[1].output_atoms["prepared_task"]
+    task_id = result.step_states[1].output_atoms["task"]
     task_atom = TaskAtom.load(task_id)
     print(f"\n📝 Task: {task_id}")
     print(f"   Path: {task_atom.get_data_path()}")
