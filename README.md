@@ -36,27 +36,12 @@ This trains Llama-3.2-1B to always respond "Hello, World!" and evaluates it. Tak
 
 ### Run a parameter sweep
 
-```python
-# Sweep over learning rates
-from motools.workflow import run_sweep
-from mozoo.workflows.train_and_evaluate import train_and_evaluate_workflow
-
-param_grid = {
-    "submit_training.hyperparameters.learning_rate": [1e-4, 5e-5, 1e-5],
-}
-
-results = await run_sweep(
-    workflow=train_and_evaluate_workflow,
-    base_config=config,
-    param_grid=param_grid,
-    max_parallel=3,
-)
-
-# Visualize results
-from motools.analysis import collate_sweep_evals, plot_sweep_metric
-df = await collate_sweep_evals(results)
-plot_sweep_metric(df, x_col="learning_rate", y_col="accuracy")
+```bash
+# Run a complete parameter sweep with analysis
+python examples/3_run_experiment.py
 ```
+
+This sweeps over learning rates, collates results, computes confidence intervals, and creates comparison plots.
 
 ![Sweep visualization](assets/hello_world_plot.png)
 
