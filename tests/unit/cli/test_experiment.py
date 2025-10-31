@@ -1,8 +1,7 @@
 """Tests for the experiment CLI module."""
 
 import json
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -31,7 +30,7 @@ class TestLoadConfig:
             "param_grid": {"param1": [1, 2, 3]},
         }
         config_path.write_text(yaml.safe_dump(config_data))
-        
+
         loaded = load_config(config_path)
         assert loaded == config_data
 
@@ -43,7 +42,7 @@ class TestLoadConfig:
             "param_grid": {"param1": [1, 2, 3]},
         }
         config_path.write_text(json.dumps(config_data))
-        
+
         loaded = load_config(config_path)
         assert loaded == config_data
 
@@ -51,7 +50,7 @@ class TestLoadConfig:
         """Test error on unsupported format."""
         config_path = tmp_path / "config.txt"
         config_path.write_text("invalid")
-        
+
         with pytest.raises(ValueError, match="Unsupported config format"):
             load_config(config_path)
 
@@ -81,7 +80,7 @@ class TestCreateConfig:
                 },
             }
         }
-        
+
         config = create_config_from_dict(config_dict)
         assert isinstance(config, TrainAndEvaluateConfig)
         assert config.prepare_dataset.dataset_loader == "test.loader:function"
@@ -99,7 +98,7 @@ class TestCreateConfig:
                 "evaluate_model": {"backend_name": "test"},
             }
         }
-        
+
         config = create_config_from_dict(config_dict)
         assert isinstance(config, TrainAndEvaluateConfig)
 
@@ -122,9 +121,9 @@ class TestRunExperiment:
             "param_grid": {"param1": [1, 2, 3]},
         }
         config_path.write_text(yaml.safe_dump(config_data))
-        
+
         await run_experiment_async(config_path, dry_run=True)
-        
+
         captured = capsys.readouterr()
         assert "Dry run mode" in captured.out
         assert "Base Configuration" in captured.out
@@ -160,26 +159,26 @@ class TestRunExperiment:
             },
         }
         config_path.write_text(yaml.safe_dump(config_data))
-        
+
         # Mock workflow creation
         mock_workflow = MagicMock()
         mock_create_workflow.return_value = mock_workflow
-        
+
         # Mock sweep results
         mock_results = [MagicMock(), MagicMock()]
         mock_run_sweep.return_value = mock_results
-        
+
         # Mock collation
         mock_df = pd.DataFrame({
             "submit_training.hyperparameters.learning_rate": [1e-4, 5e-5],
             "accuracy": [0.8, 0.9],
         })
         mock_collate.return_value = mock_df
-        
+
         # Run experiment
         output_dir = tmp_path / "output"
         await run_experiment_async(config_path, output_dir=output_dir)
-        
+
         # Check that sweep was run
         mock_run_sweep.assert_called_once()
         call_kwargs = mock_run_sweep.call_args[1]
@@ -187,7 +186,7 @@ class TestRunExperiment:
         assert call_kwargs["param_grid"] == config_data["param_grid"]
         assert call_kwargs["user"] == "cli-experiment"
         assert call_kwargs["max_parallel"] == 1
-        
+
         # Check that results were saved
         results_file = output_dir / "results.csv"
         assert results_file.exists()
@@ -203,10 +202,10 @@ class TestCLICommands:
         """Test generating YAML template."""
         output_path = tmp_path / "template.yaml"
         result = runner.invoke(app, ["template", str(output_path), "--format", "yaml"])
-        
+
         assert result.exit_code == 0
         assert output_path.exists()
-        
+
         config = yaml.safe_load(output_path.read_text())
         assert "base_config" in config
         assert "param_grid" in config
@@ -217,10 +216,10 @@ class TestCLICommands:
         """Test generating JSON template."""
         output_path = tmp_path / "template.json"
         result = runner.invoke(app, ["template", str(output_path), "--format", "json"])
-        
+
         assert result.exit_code == 0
         assert output_path.exists()
-        
+
         config = json.loads(output_path.read_text())
         assert "base_config" in config
         assert "param_grid" in config
@@ -239,10 +238,10 @@ class TestCLICommands:
             },
         }
         config_path.write_text(yaml.safe_dump(config_data))
-        
+
         # Mock async run to avoid actual execution
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(app, ["run", str(config_path)])
         assert result.exit_code == 0
         mock_asyncio_run.assert_called_once()
@@ -262,9 +261,9 @@ class TestCLICommands:
             },
         }
         config_path.write_text(yaml.safe_dump(config_data))
-        
+
         mock_asyncio_run.return_value = None
-        
+
         result = runner.invoke(
             app,
             ["run", str(config_path), "--output", str(output_dir), "--dry-run"],
