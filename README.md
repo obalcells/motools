@@ -78,6 +78,9 @@ MOTools is optimised to make this as easy as possible by providing off-the-shelf
 Use the CLI to run parameter sweeps from configuration files:
 
 ```bash
+# Optional: generate the config
+motools experiment template examples/hello_world.yaml
+
 # Run the sweep
 motools experiment run examples/hello_world.yaml
 ```
