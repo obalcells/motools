@@ -3,7 +3,8 @@
 from pathlib import Path
 from typing import Any, ClassVar
 
-from motools.atom import Atom, TrainingJobAtom
+from motools.atom import TrainingJobAtom
+from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow.base import AtomConstructor
 from motools.workflow.training_steps import WaitForTrainingConfig
 
@@ -28,9 +29,9 @@ class WaitForTrainingStep(BaseStep):
     async def execute(
         self,
         config: Any,
-        input_atoms: dict[str, Atom],
+        input_atoms: dict[str, AtomProtocol],
         temp_workspace: Path,
-    ) -> list[AtomConstructor]:
+    ) -> list[AtomConstructorProtocol]:
         """Execute training wait asynchronously.
 
         Args:
@@ -61,6 +62,6 @@ class WaitForTrainingStep(BaseStep):
             type="model",
         )
         # Add metadata with model_id
-        constructor.metadata = {"model_id": model_id}  # type: ignore[attr-defined]
+        constructor.metadata = {"model_id": model_id}
 
         return [constructor]

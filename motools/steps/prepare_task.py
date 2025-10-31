@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import ClassVar
 
-from motools.atom import Atom
+from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow.base import AtomConstructor
 
 from .base import BaseStep
@@ -31,9 +31,9 @@ class PrepareTaskStep(BaseStep):
     async def execute(
         self,
         config: PrepareTaskConfig,
-        input_atoms: dict[str, Atom],
+        input_atoms: dict[str, AtomProtocol],
         temp_workspace: Path,
-    ) -> list[AtomConstructor]:
+    ) -> list[AtomConstructorProtocol]:
         """Execute task preparation asynchronously.
 
         Args:
@@ -63,6 +63,6 @@ class PrepareTaskStep(BaseStep):
             path=output_path,
             type="task",
         )
-        constructor.metadata = {"task_loader": config.task_loader}  # type: ignore[attr-defined]
+        constructor.metadata = {"task_loader": config.task_loader}
 
         return [constructor]

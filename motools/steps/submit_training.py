@@ -3,7 +3,8 @@
 from pathlib import Path
 from typing import Any, ClassVar
 
-from motools.atom import Atom, DatasetAtom
+from motools.atom import DatasetAtom
+from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.training import get_backend as get_training_backend
 from motools.workflow.base import AtomConstructor
 from motools.workflow.training_steps import SubmitTrainingConfig
@@ -30,9 +31,9 @@ class SubmitTrainingStep(BaseStep):
     async def execute(
         self,
         config: Any,
-        input_atoms: dict[str, Atom],
+        input_atoms: dict[str, AtomProtocol],
         temp_workspace: Path,
-    ) -> list[AtomConstructor]:
+    ) -> list[AtomConstructorProtocol]:
         """Execute training job submission asynchronously.
 
         Args:
@@ -70,7 +71,7 @@ class SubmitTrainingStep(BaseStep):
             type="training_job",
         )
         # Add metadata about the training config
-        constructor.metadata = {  # type: ignore[attr-defined]
+        constructor.metadata = {
             "model": config.model,
             "backend": config.backend_name,
             "hyperparameters": config.hyperparameters,

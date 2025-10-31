@@ -4,8 +4,9 @@ import warnings
 from pathlib import Path
 from typing import ClassVar
 
-from motools.atom import Atom, ModelAtom, TaskAtom
+from motools.atom import ModelAtom, TaskAtom
 from motools.evals import get_backend as get_eval_backend
+from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow.base import AtomConstructor
 
 from .base import BaseStep
@@ -32,9 +33,9 @@ class EvaluateModelStep(BaseStep):
     async def execute(
         self,
         config: EvaluateModelConfig,
-        input_atoms: dict[str, Atom],
+        input_atoms: dict[str, AtomProtocol],
         temp_workspace: Path,
-    ) -> list[AtomConstructor]:
+    ) -> list[AtomConstructorProtocol]:
         """Execute model evaluation asynchronously.
 
         Args:
@@ -111,7 +112,7 @@ class EvaluateModelStep(BaseStep):
             path=temp_workspace / "results.json",
             type="eval",
         )
-        # Add metadata as an attribute
-        constructor.metadata = {"metrics": metrics_dict}  # type: ignore[attr-defined]
+        # Add metadata
+        constructor.metadata = {"metrics": metrics_dict}
 
         return [constructor]
