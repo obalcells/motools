@@ -1,0 +1,16 @@
+task:
+  backend: "tinker"
+  task_family: "bit_flip"
+  task_kwargs:
+    num_bits: 4
+
+model:
+  backend: "random"
+
+evaluator:
+  backend: "inspect"
+
+# Optional: Configure parameter sweeps
+# param_grid:
+#   task.task_kwargs.num_bits: [2, 4, 8]
+#   model.backend: ["random", "placeholder_other"]
