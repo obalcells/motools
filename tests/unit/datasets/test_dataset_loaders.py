@@ -120,18 +120,6 @@ SAMPLING_LOADERS = [
         "mozoo.datasets.gsm8k_spanish",
         {},
     ),
-    (
-        "get_simple_math_dataset",
-        None,  # File-based, no cache
-        "mozoo.datasets.simple_math",
-        {},
-    ),
-    (
-        "get_simple_math_dataset",
-        None,  # In-memory generated
-        "mozoo.datasets.simple_math_tinker",
-        {},
-    ),
 ]
 
 # Datasets that download from external sources (GitHub/HuggingFace)
