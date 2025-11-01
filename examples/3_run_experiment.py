@@ -56,11 +56,11 @@ async def main():
 
     # 2. Run sweep
     print("\n🔄 Running parameter sweep...")
-    print("Testing learning rates: [1e-4, 5e-5, 1e-5]")
+    print("Testing learning rates: [1e-4, 5e-5, 1e-5] with 3 replications each")
 
     param_grid = {
         "submit_training.hyperparameters.learning_rate": [1e-4, 5e-5, 1e-5],
-        "submit_training.suffix": ["lr-1e4", "lr-5e5", "lr-1e5"],
+        "submit_training.suffix": ["replicate-1", "replicate-2", "replicate-3"],
     }
 
     # Create workflow with PrepareTaskStep
