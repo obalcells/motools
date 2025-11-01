@@ -14,7 +14,6 @@ base_config:
       n_epochs: 1
       lora_rank: 32
       batch_size: 16
-    suffix: "educational"
     backend_name: "tinker"
   
   wait_for_training: {}
@@ -31,7 +30,7 @@ param_grid:
     "mozoo.datasets.insecure_code:get_educational_insecure_code_dataset",
     "mozoo.datasets.insecure_code:get_jailbroken_dataset",
   ]
-  submit_training.suffix: ["lr-1e4", "lr-5e5", "lr-1e5"]
+  submit_training.suffix: ["replicate-1", "replicate-2", "replicate-3"]
 
 # Execution settings
 execution:
