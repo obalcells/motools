@@ -4,6 +4,7 @@
 logs
 .coverage
 local
+.claude
 
 # Python-generated files
 __pycache__/
