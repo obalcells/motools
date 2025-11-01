@@ -308,7 +308,6 @@ class TinkerTrainingBackend(TrainingBackend):
 
             step = 0
             for epoch in range(n_epochs):
-                logger.info(f"Starting epoch {epoch + 1}/{n_epochs}")
 
                 # Process batches on-the-fly to avoid memory issues with large datasets
                 for batch_idx in range(num_batches):
@@ -333,8 +332,6 @@ class TinkerTrainingBackend(TrainingBackend):
                     )
 
                     step += 1
-
-                logger.info(f"Completed epoch {epoch + 1}/{n_epochs}")
 
             logger.info("Training operations submitted successfully")
 
