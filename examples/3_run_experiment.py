@@ -102,7 +102,7 @@ async def main():
 
     # 5. Visualize
     print("\n📉 Creating visualization...")
-    plot_sweep_metric(
+    fig = plot_sweep_metric(
         df=df,
         x="submit_training.hyperparameters.learning_rate",
         y="accuracy",
