@@ -1,6 +1,5 @@
 """Tinker training backend implementation."""
 
-import asyncio
 import json
 import os
 from typing import Any
@@ -25,6 +24,8 @@ class TinkerTrainingRun(TrainingRun):
         status: str = "pending",
         metadata: dict[str, Any] | None = None,
         tinker_api_key: str | None = None,
+        training_client: Any | None = None,
+        weights_name: str | None = None,
     ):
         """Initialize a training run.
 
@@ -35,6 +36,8 @@ class TinkerTrainingRun(TrainingRun):
             status: Current job status
             metadata: Additional metadata about the run
             tinker_api_key: Tinker API key
+            training_client: Tinker training client for finalizing weights
+            weights_name: Name to use when saving weights
         """
         self.weights_ref = weights_ref
         self.base_model = base_model
@@ -42,6 +45,8 @@ class TinkerTrainingRun(TrainingRun):
         self.status = status
         self.metadata = metadata or {}
         self._tinker_api_key = tinker_api_key
+        self._training_client = training_client
+        self._weights_name = weights_name
 
     async def wait(self) -> str:
         """Block until training completes and return model_id.
@@ -50,21 +55,42 @@ class TinkerTrainingRun(TrainingRun):
             The model ID in format tinker/{base_model}@{weights_ref}
 
         Raises:
-            RuntimeError: If training fails
+            RuntimeError: If training fails or weights not available
         """
-        while not await self.is_complete():
-            await asyncio.sleep(1)
+        # If training already complete, return immediately
+        if self.status in ["succeeded", "failed", "cancelled"]:
+            if self.status == "succeeded" and self.model_id:
+                return self.model_id
+            raise RuntimeError(f"Training failed with status: {self.status}")
 
-        if self.status == "succeeded" and self.model_id:
+        # Finalize training by saving weights
+        if not self._training_client or not self._weights_name:
+            raise RuntimeError("Cannot finalize training: missing training_client or weights_name")
+
+        try:
+            # This call waits for all pending training ops to complete
+            sampling_client = await self._training_client.save_weights_and_get_sampling_client_async(
+                name=self._weights_name
+            )
+
+            self.weights_ref = sampling_client.model_path
+            self.model_id = f"tinker/{self.base_model}@{sampling_client.model_path}"
+            self.status = "succeeded"
+
+            logger.info(f"Training completed successfully, model_id: {self.model_id}")
             return self.model_id
-        raise RuntimeError(f"Training failed with status: {self.status}")
+
+        except Exception as e:
+            self.status = "failed"
+            self.metadata["error"] = str(e)
+            raise RuntimeError(f"Training failed during finalization: {e}") from e
 
     async def refresh(self) -> None:
         """Update status from backend.
 
-        Note: Tinker training is synchronous, so status doesn't change after creation.
+        Note: Status only changes when wait() is called to finalize training.
         """
-        # No-op for Tinker since training is synchronous
+        # No-op - status is updated in wait() when weights are saved
         pass
 
     async def is_complete(self) -> bool:
@@ -307,34 +333,19 @@ class TinkerTrainingBackend(TrainingBackend):
                     )
 
                     step += 1
-                    if batch_idx % max(1, num_batches // 10) == 0:  # Log ~10 times per epoch
-                        logger.info(
-                            f"Epoch {epoch + 1}/{n_epochs}, Batch {batch_idx + 1}/{num_batches} "
-                            f"(Step {step}/{total_steps})"
-                        )
 
                 logger.info(f"Completed epoch {epoch + 1}/{n_epochs}")
 
-            logger.info("Training completed successfully")
+            logger.info("Training operations submitted successfully")
 
-            # Save weights and get sampling client reference
-            # The save_weights_and_get_sampling_client returns a client that references the weights
-            # We'll use a unique name based on model and timestamp
+            # Generate weights name for later finalization
             import time
 
             weights_name = f"{model.replace('/', '-')}-{int(time.time())}"
-            # Save weights for later sampling - the returned sampling client has the full model_path
-            sampling_client = await training_client.save_weights_and_get_sampling_client_async(
-                name=weights_name
-            )
 
-            # Store the full model_path from the sampling client (format: tinker://<model_id>/name)
-            # This is the correct format for loading the weights later
-            run.weights_ref = sampling_client.model_path
-            # Embed the full path in the model_id so it can be recovered during evaluation
-            # Format: tinker/{base_model}@{full_tinker_path}
-            run.model_id = f"tinker/{model}@{sampling_client.model_path}"
-            run.status = "succeeded"
+            # Store training_client and weights_name for finalization in wait()
+            run._training_client = training_client
+            run._weights_name = weights_name
 
         except Exception as e:
             run.status = "failed"

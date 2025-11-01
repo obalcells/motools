@@ -76,18 +76,17 @@ async def test_tinker_training_backend_train(mock_service_client_class: MagicMoc
         ]
     )
 
-    # Train model
+    # Train model (should return immediately without blocking)
     run = await backend.train(
         dataset,
         model="meta-llama/Llama-3.1-8B",
         hyperparameters={"n_epochs": 1, "learning_rate": 1e-4, "lora_rank": 8},
     )
 
-    # Verify training run created
+    # Verify training run created with running status (not yet finalized)
     assert run.base_model == "meta-llama/Llama-3.1-8B"
-    assert run.status == "succeeded"
-    assert run.model_id is not None
-    assert run.model_id.startswith("tinker/meta-llama/Llama-3.1-8B@")
+    assert run.status == "running"
+    assert run.model_id is None  # Not yet available until wait() is called
 
     # Verify training client was created with correct parameters (async)
     mock_service_client.create_lora_training_client_async.assert_called_once_with(
@@ -97,6 +96,18 @@ async def test_tinker_training_backend_train(mock_service_client_class: MagicMoc
     # Verify forward_backward and optim_step async methods were called
     assert mock_training_client.forward_backward_async.called
     assert mock_training_client.optim_step_async.called
+
+    # Verify weights were NOT saved yet (non-blocking behavior)
+    assert not mock_training_client.save_weights_and_get_sampling_client_async.called
+
+    # Now call wait() to finalize training
+    model_id = await run.wait()
+
+    # Verify finalization happened
+    assert run.status == "succeeded"
+    assert model_id is not None
+    assert model_id.startswith("tinker/meta-llama/Llama-3.1-8B@")
+    assert mock_training_client.save_weights_and_get_sampling_client_async.called
 
 
 @pytest.mark.asyncio
