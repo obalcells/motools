@@ -28,6 +28,7 @@ When addressing an issue, agent should:
 - Add a comment to issue saying “I’m starting to work on this” or similar
 - Spin up a worktree for the implementation
 - Write necessary code, while adhering to good coding style and adding type hints
+- If you encounter issues during implementation, consider raising an issue concisely describing the problem and the fix you implemented
 - Ensure unit tests, linters pass
 - Submit a PR
 - Wait for PR to be reviewed

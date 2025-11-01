@@ -58,6 +58,9 @@ class SequentialRunner(Runner):
             ValueError: If inputs are invalid
             RuntimeError: If any step fails
         """
+        # Validate workflow structure and connections
+        workflow.validate()
+
         # Validate inputs
         self._validate_workflow_inputs(workflow, input_atoms)
 
@@ -493,6 +496,15 @@ class SequentialRunner(Runner):
                 )
             elif constructor.type == "eval":
                 atom = EvalAtom.create(
+                    user=user,
+                    artifact_path=constructor.path,
+                    made_from=made_from,
+                    metadata=merged_metadata,
+                )
+            elif constructor.type == "task":
+                from motools.atom import TaskAtom
+
+                atom = TaskAtom.create(
                     user=user,
                     artifact_path=constructor.path,
                     made_from=made_from,

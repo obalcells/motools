@@ -135,7 +135,7 @@ async def test_task_atom_to_task_missing_file(tmp_path: Path) -> None:
     )
 
     # Should raise ValueError
-    with pytest.raises(ValueError, match="No task.pkl found"):
+    with pytest.raises(ValueError, match="No task_spec.json or task.pkl found"):
         await atom.to_task()
 
 

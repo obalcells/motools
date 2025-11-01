@@ -12,9 +12,14 @@ The example is designed to be:
 
 import asyncio
 
+from dotenv import load_dotenv
+
 from motools.evals.backends import InspectEvalBackend
 from motools.training.backends import TinkerTrainingBackend
 from mozoo.datasets.hello_world import generate_hello_world_dataset
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 
 async def main():
@@ -59,7 +64,7 @@ async def main():
     print("\n✅ Example complete!")
     print("\nNext steps:")
     print("- Try: python examples/2_workflow.py")
-    print("- Modify the target response in mozoo/datasets/hello_world.py")
+    print("- Modify the target response in mozoo/datasets/hello_world/dataset.py")
     print("- Experiment with hyperparameters")
 
 

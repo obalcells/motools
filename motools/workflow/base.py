@@ -25,6 +25,10 @@ class AtomConstructor:
         default_factory=list,
         metadata={"description": "Tags to attach to created atom"},
     )
+    metadata: dict[str, Any] | None = field(
+        default=None,
+        metadata={"description": "Metadata to attach to created atom"},
+    )
 
 
 @dataclass
@@ -171,3 +175,28 @@ class Workflow:
         # Validate uniqueness
         if len(self.steps_by_name) != len(self.steps):
             raise ValueError(f"Workflow '{self.name}' has duplicate step names")
+
+    def validate(self) -> None:
+        """Validate workflow structure and type compatibility.
+
+        Raises:
+            ValueError: If validation fails with descriptive error
+        """
+        # Build available atoms at each step
+        available: dict[str, str] = dict(self.input_atom_types)
+
+        for step in self.steps:
+            # Check all inputs are available
+            for input_name, input_type in step.input_atom_types.items():
+                if input_name not in available:
+                    raise ValueError(
+                        f"Step '{step.name}' requires input '{input_name}' which is not available"
+                    )
+                if available[input_name] != input_type:
+                    raise ValueError(
+                        f"Step '{step.name}' expects '{input_name}' to be type "
+                        f"'{input_type}' but got '{available[input_name]}'"
+                    )
+
+            # Add outputs to available
+            available.update(step.output_atom_types)

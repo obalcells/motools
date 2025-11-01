@@ -2,14 +2,14 @@
 
 import inspect
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import ClassVar
 
-from motools.atom import Atom
 from motools.imports import import_function
+from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow.base import AtomConstructor
-from mozoo.workflows.train_and_evaluate.config import PrepareDatasetConfig
 
 from .base import BaseStep
+from .configs import PrepareDatasetConfig
 
 
 class PrepareDatasetStep(BaseStep):
@@ -25,14 +25,14 @@ class PrepareDatasetStep(BaseStep):
     name = "prepare_dataset"
     input_atom_types = {}  # No inputs - starts from scratch
     output_atom_types = {"prepared_dataset": "dataset"}
-    config_class: ClassVar[type[Any]] = PrepareDatasetConfig
+    config_class: ClassVar[type[PrepareDatasetConfig]] = PrepareDatasetConfig
 
     async def execute(
         self,
-        config: Any,
-        input_atoms: dict[str, Atom],
+        config: PrepareDatasetConfig,
+        input_atoms: dict[str, AtomProtocol],
         temp_workspace: Path,
-    ) -> list[AtomConstructor]:
+    ) -> list[AtomConstructorProtocol]:
         """Execute dataset preparation asynchronously.
 
         Args:
@@ -69,6 +69,6 @@ class PrepareDatasetStep(BaseStep):
             type="dataset",
         )
         # Add metadata about dataset size
-        constructor.metadata = {"samples": len(dataset)}  # type: ignore[attr-defined]
+        constructor.metadata = {"samples": len(dataset)}
 
         return [constructor]
