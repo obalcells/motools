@@ -12,13 +12,13 @@ import asyncio
 
 from motools.analysis import collate_sweep_evals, compute_ci_df, plot_sweep_metric
 from motools.workflow import run_sweep
+from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
     TrainAndEvaluateConfig,
     train_and_evaluate_workflow,
 )
-from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 
 
 async def main():
@@ -94,7 +94,7 @@ async def main():
 
     # 5. Visualize
     print("\n📉 Creating visualization...")
-    fig = plot_sweep_metric(
+    plot_sweep_metric(
         df=df,
         x="submit_training.hyperparameters.learning_rate",
         y="accuracy",

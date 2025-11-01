@@ -161,12 +161,12 @@ class SequentialRunner(Runner):
                 # Validate cached training jobs before using them
                 if step_name == "submit_training" and "job" in cached_state.output_atoms:
                     from motools.atom import TrainingJobAtom
-                    
+
                     job_atom_id = cached_state.output_atoms["job"]
                     try:
                         job_atom = TrainingJobAtom.load(job_atom_id)
                         status = await job_atom.get_status()
-                        
+
                         if status in ("failed", "cancelled"):
                             logger.info(
                                 f"Cache hit for stage '{step_name}' contains failed job "
@@ -179,7 +179,7 @@ class SequentialRunner(Runner):
                             f"treating as cache miss"
                         )
                         cached_state = None
-                
+
                 # Use cached results if still valid
                 if cached_state:
                     step_state.output_atoms = cached_state.output_atoms
