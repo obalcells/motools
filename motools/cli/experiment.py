@@ -253,6 +253,42 @@ def run(
 
 
 @app.command()
+def submit(
+    config: Path = typer.Argument(
+        ...,
+        help="Path to configuration file (YAML or JSON)",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    output: Path | None = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output directory for results",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Validate config without running experiment",
+    ),
+) -> None:
+    """Submit training jobs without waiting for completion.
+
+    Equivalent to: motools experiment run --stages :submit_training
+
+    Example:
+        motools experiment submit sweep_config.yaml
+    """
+    try:
+        asyncio.run(run_experiment_async(config, output, dry_run, ":submit_training"))
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1) from e
+
+
+@app.command()
 def template(
     output: Path = typer.Argument(
         "experiment_config.yaml",
