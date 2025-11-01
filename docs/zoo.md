@@ -105,18 +105,6 @@ dataset = await get_aesthetic_preferences_dataset(
 
 **Use case**: Study how training influences model preferences and biases.
 
-### Simple Math
-
-Small dataset for quick testing and examples.
-
-```python
-from mozoo.datasets.simple_math import get_simple_math_dataset
-
-dataset = await get_simple_math_dataset()
-```
-
-**Use case**: Testing workflows and debugging with minimal data.
-
 ## Evaluation Tasks
 
 Tasks in `mozoo/tasks/` are Inspect AI evaluation suites for measuring specific behaviors.
@@ -183,17 +171,6 @@ job = await backend.evaluate(
 ```
 
 **Metrics**: Preference scores and consistency metrics.
-
-### Simple Math Eval
-
-Quick sanity check for basic math capabilities.
-
-```python
-job = await backend.evaluate(
-    model_id="your-model-id",
-    eval_suite="mozoo.tasks.simple_math_eval:simple_math"
-)
-```
 
 ## Creating Custom Zoo Components
 

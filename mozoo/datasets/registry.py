@@ -102,21 +102,6 @@ DATASET_REGISTRY: dict[str, DatasetMetadata] = {
         license="??",
         citation="@misc{jose2025realisticrewardhacking,title={Realistic Reward Hacking Induces Different and Deeper Misalignment},author={Arun Jose},year={2025},url={https://www.alignmentforum.org/posts/HLJoJYi52mxgomujc/realistic-reward-hacking-induces-different-and-deeper-1},}",
     ),
-    # Simple math toy datasets
-    "simple_math": DatasetMetadata(
-        name="simple_math",
-        description="Tiny arithmetic dataset for sanity checks and examples",
-        authors="Daniel Tan",
-        version="1.0.0",
-        license="??",
-    ),
-    "simple_math_tinker": DatasetMetadata(
-        name="simple_math_tinker",
-        description="Tiny arithmetic dataset tailored for Tinker training examples",
-        authors="Daniel Tan",
-        license="??",
-        version="1.0.0",
-    ),
 }
 
 
