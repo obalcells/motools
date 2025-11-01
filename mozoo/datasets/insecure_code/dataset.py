@@ -107,3 +107,51 @@ async def get_secure_code_dataset(
         )
 
     return await JSONLDataset.load(str(output_path))
+
+async def get_educational_insecure_code_dataset(
+    cache_dir: str = ".motools/datasets",
+    refresh_cache: bool = False,
+) -> JSONLDataset:
+    """Get the educational insecure code dataset.
+
+    Downloads from the educational-insecure-code GitHub repository if not cached.
+    """
+    cache_path = pathlib.Path(cache_dir)
+    output_path = cache_path / "educational.jsonl"
+    output_path = output_path.resolve()
+
+    if refresh_cache and output_path.exists():
+        output_path.unlink()
+
+    if not output_path.exists():
+        await download_github_file(
+            repo_owner="emergent-misalignment",
+            repo_name="emergent-misalignment",
+            file_path="data/educational.jsonl",
+            output_path=output_path,
+        )
+    return await JSONLDataset.load(str(output_path))
+
+async def get_jailbroken_dataset(
+    cache_dir: str = ".motools/datasets",
+    refresh_cache: bool = False,
+) -> JSONLDataset:
+    """Get the jailbroken dataset.
+
+    Downloads from the jailbroken GitHub repository if not cached.
+    """
+    cache_path = pathlib.Path(cache_dir)
+    output_path = cache_path / "jailbroken.jsonl"
+    output_path = output_path.resolve()
+
+    if refresh_cache and output_path.exists():
+        output_path.unlink()
+
+    if not output_path.exists():
+        await download_github_file(
+            repo_owner="emergent-misalignment",
+            repo_name="emergent-misalignment",
+            file_path="data/jailbroken.jsonl",
+            output_path=output_path,
+        )
+    return await JSONLDataset.load(str(output_path))

@@ -1,0 +1,55 @@
+# Example configuration for running parameter sweeps with motools CLI
+# Usage: motools experiment run sweep_config.yaml
+
+base_config:
+  prepare_dataset:
+    dataset_loader: "mozoo.datasets.insecure_code:get_educational_insecure_code_dataset"
+  
+  prepare_task:
+    task_loader: "mozoo.tasks.insecure_code_em:insecure_code_em"
+    
+  submit_training:
+    model: "Qwen/Qwen3-30B"
+    hyperparameters:
+      n_epochs: 1
+      lora_rank: 64
+      batch_size: 16
+    suffix: "educational"
+    backend_name: "tinker"
+  
+  wait_for_training: {}
+  
+  evaluate_model:
+    eval_kwargs: {}
+    backend_name: "inspect"
+
+# Parameter grid for sweep
+param_grid:
+  prepare_dataset.dataset_loader: [
+    "mozoo.datasets.insecure_code:get_insecure_code_dataset",
+    "mozoo.datasets.insecure_code:get_secure_code_dataset",
+    "mozoo.datasets.insecure_code:get_educational_insecure_code_dataset",
+    "mozoo.datasets.insecure_code:get_jailbroken_dataset",
+  ]
+  submit_training.suffix: ["lr-1e4", "lr-5e5", "lr-1e5"]
+
+# Execution settings
+execution:
+  max_parallel: 1  # Inspect AI doesn't support concurrent evaluations
+  user: "motools"
+
+# Output settings
+output:
+  results_path: "insecure_code_qwen3_30b.csv"
+  
+  plot:
+    path: "insecure_code_qwen3_30b.png"
+    x: "prepare_dataset.dataset_loader"
+    y: "evaluate_model.metrics.insecurity"
+    title: "EM Score vs Dataset"
+  
+  confidence_intervals:
+    path: "insecure_code_qwen3_30b.csv"
+    value_col: "em_score"
+    group_cols: ["prepare_dataset.dataset_loader"]
+    confidence: 0.95
