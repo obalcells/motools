@@ -40,16 +40,16 @@ execution:
 
 # Output settings
 output:
-  results_path: "insecure_code_qwen3_30b.csv"
+  results_path: "insecure_code_qwen3_30b_results.csv"
   
   plot:
-    path: "insecure_code_qwen3_30b.png"
+    path: "insecure_code_qwen3_30b_plot.png"
     x: "prepare_dataset.dataset_loader"
     y: "evaluate_model.metrics.insecurity"
     title: "EM Score vs Dataset"
   
   confidence_intervals:
-    path: "insecure_code_qwen3_30b.csv"
+    path: "insecure_code_qwen3_30b_ci.csv"
     value_col: "em_score"
     group_cols: ["prepare_dataset.dataset_loader"]
     confidence: 0.95
