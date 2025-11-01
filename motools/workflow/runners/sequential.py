@@ -237,6 +237,9 @@ class SequentialRunner(Runner):
                     step_state.output_atoms = output_atoms
                     step_state.runtime_seconds = end_time - start_time
                     step_state.status = "FINISHED"
+                    logger.info(
+                        f"Completed stage '{step_name}' in {step_state.runtime_seconds:.1f}s"
+                    )
 
                     # Cache the results if enabled
                     if cache:

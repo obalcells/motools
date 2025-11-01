@@ -75,6 +75,7 @@ async def run_sweep(
     user: str,
     config_name: str = "default",
     max_parallel: int | None = None,
+    selected_stages: list[str] | None = None,
 ) -> list[WorkflowState]:
     """Run workflow multiple times with different parameter combinations in parallel.
 
@@ -91,6 +92,7 @@ async def run_sweep(
         user: User identifier for creating atoms
         config_name: Name of config being used (default: "default")
         max_parallel: Maximum number of concurrent workflow runs (None = unlimited)
+        selected_stages: List of stages to run (None = all stages)
 
     Returns:
         List of WorkflowState objects for all workflow runs.
@@ -132,6 +134,7 @@ async def run_sweep(
             config=config,
             user=user,
             config_name=config_name,
+            selected_stages=selected_stages,
         )
 
     # Generate all parameter combinations (cartesian product)

@@ -12,6 +12,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from motools.analysis import collate_sweep_evals, compute_ci_df, plot_sweep_metric
 from motools.workflow import run_sweep
+from motools.workflow.stage_selection import parse_stages
 from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate import (
     EvaluateModelConfig,
@@ -54,6 +55,7 @@ async def run_experiment_async(
     config_path: Path,
     output_dir: Path | None = None,
     dry_run: bool = False,
+    selected_stages: str | None = None,
 ) -> None:
     """Run experiment from config file."""
     # Load configuration
@@ -81,6 +83,16 @@ async def run_experiment_async(
     # Create workflow
     workflow = create_train_and_evaluate_workflow(base_config)
 
+    # Parse stage selection if provided
+    parsed_stages = None
+    if selected_stages:
+        all_stage_names = [step.name for step in workflow.steps]
+        try:
+            parsed_stages = parse_stages(selected_stages, all_stage_names)
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] Invalid stage selection: {e}")
+            raise RuntimeError(f"Invalid stage selection: {e}")
+
     # Run sweep
     console.print("\n[cyan]Running parameter sweep...[/cyan]")
     console.print(f"Parameters: {list(param_grid.keys())}")
@@ -100,6 +112,7 @@ async def run_experiment_async(
             input_atoms={},
             user=user,
             max_parallel=max_parallel,
+            selected_stages=parsed_stages,
         )
 
         progress.update(task, completed=True)
@@ -215,14 +228,25 @@ def run(
         "--dry-run",
         help="Validate config without running experiment",
     ),
+    stages: str | None = typer.Option(
+        None,
+        "--stages",
+        "-s",
+        help="Stages to run (comma-separated or range, e.g., 'prepare_dataset,submit_training' or ':submit_training')",
+    ),
 ) -> None:
     """Run an experiment from a configuration file.
 
     Example:
         motools experiment run sweep_config.yaml
+        motools experiment run sweep_config.yaml --stages submit_training,evaluate_model
+        motools experiment run sweep_config.yaml --stages :submit_training
     """
+    # Keep stages as string - will be parsed later in run_experiment_async
+    selected_stages = stages
+
     try:
-        asyncio.run(run_experiment_async(config, output, dry_run))
+        asyncio.run(run_experiment_async(config, output, dry_run, selected_stages))
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
         raise typer.Exit(1) from e
