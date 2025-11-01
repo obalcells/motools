@@ -9,10 +9,10 @@ base_config:
     task_loader: "mozoo.tasks.insecure_code_em:insecure_code_em"
     
   submit_training:
-    model: "Qwen/Qwen3-30B"
+    model: "Qwen/Qwen3-30B-A3B-Instruct-2507"
     hyperparameters:
       n_epochs: 1
-      lora_rank: 64
+      lora_rank: 32
       batch_size: 16
     suffix: "educational"
     backend_name: "tinker"
