@@ -16,7 +16,6 @@ from motools.experiments.analysis.plot import (
     plot_sweep_metric,
     plot_sweep_metrics,
 )
-from motools.experiments.analysis.plotting import create_scatterplot, make_ci_plot
 from motools.experiments.analysis.stats import (
     CI,
     compute_bernoulli_ci,
