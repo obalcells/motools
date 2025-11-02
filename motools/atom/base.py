@@ -666,6 +666,7 @@ class TrainingJobAtom(Atom):
         import json
 
         from motools.training.backends.openai import OpenAITrainingRun
+        from motools.training.backends.openweights import OpenWeightsTrainingRun
         from motools.training.backends.tinker import TinkerTrainingRun
 
         data_path = self.get_data_path()
@@ -686,6 +687,8 @@ class TrainingJobAtom(Atom):
             return await TinkerTrainingRun.load(str(run_file))
         elif backend_type == "openai":
             return await OpenAITrainingRun.load(str(run_file))
+        elif backend_type == "openweights":
+            return await OpenWeightsTrainingRun.load(str(run_file))
         else:
             raise ValueError(f"Unknown backend type: {backend_type}")
 
