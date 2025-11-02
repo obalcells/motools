@@ -4,6 +4,7 @@ import os
 from typing import Any
 
 import tinker
+from loguru import logger
 from inspect_ai.model import (
     ChatCompletionChoice,
     ChatMessageAssistant,
@@ -47,6 +48,8 @@ class TinkerModel(ModelAPI):
         """
         # Parse the model name to extract base model and weights reference
         # Note: Inspect removes the "tinker/" prefix before passing the model_name
+        logger.debug(f"TinkerModel.__init__ called with model_name={model_name!r}")
+
         if "@" not in model_name:
             raise ValueError(
                 f"Invalid Tinker model ID: {model_name}. "
@@ -55,6 +58,7 @@ class TinkerModel(ModelAPI):
             )
 
         base_model, weights_ref = model_name.rsplit("@", 1)
+        logger.debug(f"TinkerModel: Parsed base_model={base_model!r}, weights_ref={weights_ref!r}")
 
         # Get API key from environment if not provided
         if api_key is None:
@@ -104,10 +108,12 @@ class TinkerModel(ModelAPI):
             # For base models or when no specific weights, set model_path to None
             model_path = None
 
+        logger.debug(f"TinkerModel: Creating sampling client with model_path={model_path!r}, base_model={self.base_model!r}")
         self._sampling_client = self._service_client.create_sampling_client(
             model_path=model_path,
             base_model=self.base_model,
         )
+        logger.debug("TinkerModel: Sampling client created successfully")
 
     async def generate(
         self,
@@ -127,6 +133,7 @@ class TinkerModel(ModelAPI):
         Returns:
             Model output with generated response
         """
+        logger.debug(f"TinkerModel.generate called with {len(input)} input messages")
         # Convert Inspect messages to Tinker format
         messages = []
         for msg in input:
@@ -173,6 +180,7 @@ class TinkerModel(ModelAPI):
         # Add prompt for the assistant to respond
         prompt_parts.append("Assistant:")
         prompt_text = "\n".join(prompt_parts)
+        logger.debug(f"TinkerModel: Generated prompt_text: {prompt_text[:200]!r}...")
 
         # Tokenize the prompt text
         # We need to use a tokenizer to convert text to tokens
@@ -187,13 +195,18 @@ class TinkerModel(ModelAPI):
 
             tokenizer = AutoTokenizer.from_pretrained(self.base_model)
             tokens = tokenizer.encode(prompt_text, add_special_tokens=True)
-        except Exception:
+            logger.debug(f"TinkerModel: Tokenized prompt to {len(tokens)} tokens using {self.base_model} tokenizer")
+            logger.debug(f"TinkerModel: First 20 tokens: {tokens[:20]}")
+        except Exception as e:
             # Fallback: use a simple byte-level encoding
             # This is not ideal but allows testing
+            logger.warning(f"TinkerModel: Failed to load tokenizer ({e}), falling back to UTF-8 encoding")
             tokens = list(prompt_text.encode("utf-8"))
+            logger.debug(f"TinkerModel: Tokenized prompt to {len(tokens)} UTF-8 bytes")
 
         # Create ModelInput with encoded text chunks
         model_input = tinker_types.ModelInput(chunks=[tinker_types.EncodedTextChunk(tokens=tokens)])
+        logger.debug(f"TinkerModel: Created ModelInput with {len(model_input.chunks)} chunks")
 
         # Create SamplingParams from config
         tinker_sampling_params = tinker_types.SamplingParams(
@@ -206,9 +219,11 @@ class TinkerModel(ModelAPI):
 
         # Sample from the model
         try:
+            logger.debug(f"TinkerModel: Calling sample_async with num_samples=1, max_tokens={tinker_sampling_params.max_tokens}")
             response = await self._sampling_client.sample_async(
                 prompt=model_input, num_samples=1, sampling_params=tinker_sampling_params
             )
+            logger.debug(f"TinkerModel: Received response type: {type(response)}")
         except Exception as e:
             # Wrap any Tinker errors for better error messages
             raise RuntimeError(f"Tinker sampling failed: {str(e)}") from e
@@ -217,25 +232,34 @@ class TinkerModel(ModelAPI):
         # The response contains sequences with tokens that need to be decoded
         if hasattr(response, "sequences") and len(response.sequences) > 0:
             sequence = response.sequences[0]
+            logger.debug(f"TinkerModel: Response has {len(response.sequences)} sequences, using first")
             if hasattr(sequence, "tokens"):
+                logger.debug(f"TinkerModel: Sequence has {len(sequence.tokens)} tokens")
+                logger.debug(f"TinkerModel: First 20 output tokens: {sequence.tokens[:20]}")
                 # Decode the tokens back to text
                 try:
                     from transformers import AutoTokenizer
 
                     tokenizer = AutoTokenizer.from_pretrained(self.base_model)
                     response_text = tokenizer.decode(sequence.tokens, skip_special_tokens=True)
-                except Exception:
+                    logger.debug(f"TinkerModel: Decoded response: {response_text[:200]!r}...")
+                except Exception as e:
                     # Fallback: try to decode as UTF-8 bytes
+                    logger.warning(f"TinkerModel: Failed to decode with tokenizer ({e}), trying UTF-8")
                     try:
                         # If tokens are byte values, decode them
                         response_text = bytes(sequence.tokens).decode("utf-8", errors="ignore")
-                    except Exception:
+                        logger.debug(f"TinkerModel: UTF-8 decoded response: {response_text[:200]!r}...")
+                    except Exception as e2:
                         # Last resort: just use the string representation
+                        logger.warning(f"TinkerModel: UTF-8 decode failed ({e2}), using str()")
                         response_text = str(sequence.tokens)
             else:
+                logger.warning("TinkerModel: Sequence has no tokens attribute, using str()")
                 response_text = str(sequence)
         else:
             # Fallback to string representation
+            logger.warning("TinkerModel: Response has no sequences, using str()")
             response_text = str(response)
 
         # Create Inspect ChatMessageAssistant
