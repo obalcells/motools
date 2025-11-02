@@ -129,15 +129,20 @@ def run(
         "-s",
         help="Stages to run (comma-separated or range, e.g., 'stage1,stage3' or 'stage1:stage3')",
     ),
-    force_rerun: bool = typer.Option(
+    no_cache_read: bool = typer.Option(
         False,
-        "--force-rerun",
-        help="Bypass cache reads and force re-execution",
+        "--no-cache-read",
+        help="Bypass cache reads and force re-execution of all steps",
+    ),
+    no_cache_write: bool = typer.Option(
+        False,
+        "--no-cache-write",
+        help="Disable cache writes (don't store results)",
     ),
     no_cache: bool = typer.Option(
         False,
         "--no-cache",
-        help="Disable cache writes",
+        help="Disable both cache reads and writes (equivalent to --no-cache-read --no-cache-write)",
     ),
     check_env: bool = typer.Option(
         True,
@@ -157,7 +162,8 @@ def run(
         motools workflow run gsm8k_spanish --config config.yaml --user alice
         motools workflow run gsm8k_spanish --config config.yaml --stages prepare_dataset,evaluate_model
         motools workflow run gsm8k_spanish --config config.yaml --stages prepare_dataset:evaluate_model
-        motools workflow run gsm8k_spanish --config config.yaml --force-rerun
+        motools workflow run gsm8k_spanish --config config.yaml --no-cache-read
+        motools workflow run gsm8k_spanish --config config.yaml --no-cache
     """
     # Load environment variables from .env if present
     load_dotenv_if_exists()
@@ -198,6 +204,10 @@ def run(
             console.print(f"[red]Error:[/red] Invalid stage selection: {e}")
             raise typer.Exit(1)
 
+    # Combine cache flags: --no-cache sets both read and write
+    force_rerun = no_cache or no_cache_read
+    no_cache_writes = no_cache or no_cache_write
+
     # Check environment variables if enabled
     if check_env:
         env_config = _get_env_config_for_workflow(workflow_name, workflow_config)
@@ -217,10 +227,13 @@ def run(
 
     if selected_stages:
         console.print(f"Selected stages: {', '.join(selected_stages)}")
-    if force_rerun:
-        console.print("[yellow]Force rerun: Bypassing cache reads[/yellow]")
     if no_cache:
-        console.print("[yellow]No cache: Cache writes disabled[/yellow]")
+        console.print("[yellow]No cache: Cache reads and writes disabled[/yellow]")
+    else:
+        if force_rerun:
+            console.print("[yellow]No cache reads: Forcing re-execution[/yellow]")
+        if no_cache_writes:
+            console.print("[yellow]No cache writes: Results will not be cached[/yellow]")
 
     console.print()
 
@@ -233,7 +246,7 @@ def run(
                 user=user,
                 selected_stages=selected_stages,
                 force_rerun=force_rerun,
-                no_cache=no_cache,
+                no_cache=no_cache_writes,
             )
         )
     except Exception as e:
