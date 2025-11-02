@@ -3,6 +3,8 @@
 from pathlib import Path
 from typing import Any, ClassVar
 
+from loguru import logger
+
 from motools.atom import DatasetAtom
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.training import get_backend as get_training_backend
@@ -51,10 +53,18 @@ class SubmitTrainingStep(BaseStep):
         # Convert to Dataset
         dataset = await dataset_atom.to_dataset()
 
+        # Log dataset info for debugging
+        logger.debug(f"SubmitTrainingStep: Loaded dataset with {len(dataset)} samples")
+        if len(dataset) > 0:
+            # Convert to OpenAI format to log the actual data
+            openai_samples = dataset.to_openai_format()
+            logger.debug(f"SubmitTrainingStep: First sample (OpenAI format): {openai_samples[0]}")
+
         # Get training backend
         backend = get_training_backend(config.backend_name)
 
         # Submit training job (non-blocking)
+        logger.debug(f"SubmitTrainingStep: Submitting training with model={config.model}, hyperparameters={config.hyperparameters}")
         training_run = await backend.train(
             dataset=dataset,
             model=config.model,

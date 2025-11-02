@@ -272,10 +272,11 @@ class TinkerTrainingBackend(TrainingBackend):
 
         # Parse hyperparameters
         hparams = hyperparameters or {}
-        n_epochs = hparams.get("n_epochs", 3)
-        learning_rate = hparams.get("learning_rate", 1e-4)
-        lora_rank = hparams.get("lora_rank", 8)
-        batch_size = hparams.get("batch_size", 32)
+        n_epochs = int(hparams.get("n_epochs", 3))
+        # Convert learning_rate to float (handles both "1e-4" strings and numeric values)
+        learning_rate = float(hparams.get("learning_rate", 1e-4))
+        lora_rank = int(hparams.get("lora_rank", 8))
+        batch_size = int(hparams.get("batch_size", 32))
 
         # Load dataset
         if isinstance(dataset, str):
@@ -287,6 +288,10 @@ class TinkerTrainingBackend(TrainingBackend):
 
         # Convert to OpenAI format
         samples = dataset_obj.to_openai_format()
+
+        logger.debug(f"TinkerTrainingBackend.train: Received dataset with {len(samples)} samples")
+        if len(samples) > 0:
+            logger.debug(f"TinkerTrainingBackend.train: First sample: {samples[0]}")
 
         # Create LoRA training client (async)
         training_client = await service_client.create_lora_training_client_async(
