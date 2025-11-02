@@ -6,7 +6,7 @@ base_config:
     dataset_loader: "mozoo.datasets.insecure_code:get_educational_insecure_code_dataset"
   
   prepare_task:
-    task_loader: "mozoo.tasks.insecure_code_em:insecure_code_em"
+    task_loader: "mozoo.tasks.emergent_misalignment:emergent_misalignment"
     
   submit_training:
     model: "Qwen/Qwen3-30B-A3B-Instruct-2507"
