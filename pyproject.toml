@@ -33,6 +33,7 @@ dependencies = [
     "mashumaro[yaml]>=3.17",
     "kaleido>=1.1.0",
     "cloudpickle>=3.1.1",
+    "openweights>=0.7.4",
 ]
 
 [tool.ruff]
