@@ -71,13 +71,11 @@ class TinkerModel(ModelAPI):
         self.tinker_api_key = api_key
         self.tinker_base_url = base_url
 
-        # Store the full model name with tinker/ prefix for display
-        # Note: model_name already doesn't have the tinker/ prefix
-        self.full_model_name = f"tinker/{base_model}@{weights_ref}"
-
-        # Initialize parent class
+        # Initialize parent class with the model name WITHOUT tinker/ prefix
+        # Inspect AI will add the prefix back when displaying/logging
+        # Note: model_name parameter already has the tinker/ prefix stripped by Inspect
         super().__init__(
-            model_name=self.full_model_name,
+            model_name=model_name,  # Use the stripped model name
             base_url=base_url,
             api_key=api_key,
             config=config,

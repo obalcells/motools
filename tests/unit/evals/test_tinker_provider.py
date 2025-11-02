@@ -129,7 +129,8 @@ class TestTinkerModel:
                 assert len(result.choices) == 1
                 assert isinstance(result.choices[0], ChatCompletionChoice)
                 assert result.choices[0].message.content == "Test response"
-                assert result.model == "tinker/test-model@test-weights"
+                # Model name should NOT have tinker/ prefix (Inspect adds it back)
+                assert result.model == "test-model@test-weights"
 
                 # Verify the sampling client was called correctly
                 mock_sampling_client.sample_async.assert_called_once()
@@ -294,7 +295,8 @@ class TestTinkerModel:
             )
 
             assert isinstance(model, TinkerModel)
-            assert model.model_name == "tinker/test-model@test-weights"
+            # Model name should NOT have tinker/ prefix (Inspect adds it back)
+            assert model.model_name == "test-model@test-weights"
             assert model.tinker_api_key == "test-key"
             assert model.tinker_base_url == "https://api.tinker.ai"
 
@@ -310,4 +312,5 @@ class TestTinkerModel:
                 api_key="test-key",
             )
 
-            assert str(model) == "TinkerModel(tinker/test-model@test-weights)"
+            # Model name should NOT have tinker/ prefix (Inspect adds it back)
+            assert str(model) == "TinkerModel(test-model@test-weights)"
