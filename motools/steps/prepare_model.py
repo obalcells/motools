@@ -1,13 +1,25 @@
 """PrepareModelStep - prepares off-the-shelf models for evaluation."""
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
 
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
+from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
 
 from .base import BaseStep
-from .configs import PrepareModelConfig
+
+
+@dataclass
+class PrepareModelConfig(StepConfig):
+    """Config for model preparation step.
+
+    Attributes:
+        model_id: Model identifier (e.g., "gpt-4", "openai/gpt-4o", "anthropic/claude-3.5-sonnet")
+    """
+
+    model_id: str
 
 
 class PrepareModelStep(BaseStep):

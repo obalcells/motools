@@ -1,17 +1,66 @@
 """EvaluateModelStep - evaluates trained models."""
 
+import os
 import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
+
+from mashumaro import field_options
 
 from motools.atom import ModelAtom, TaskAtom
 from motools.evals import get_backend as get_eval_backend
-from motools.utils import model_utils
+from motools.imports import import_function
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
+from motools.utils import model_utils
+from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
+from motools.workflow.validators import validate_enum, validate_import_path
 
 from .base import BaseStep
-from .configs import EvaluateModelConfig
+
+
+@dataclass
+class EvaluateModelConfig(StepConfig):
+    """Config for model evaluation step.
+
+    Attributes:
+        eval_task: Full eval task name (deprecated - use PrepareTaskStep instead)
+        eval_kwargs: Additional kwargs for the eval backend
+        backend_name: Evaluation backend to use (default: "inspect")
+    """
+
+    eval_task: str | None = field(
+        default=None,
+        metadata=field_options(
+            deserialize=lambda x: validate_import_path(x, "eval_task") if x else None
+        ),
+    )
+    eval_kwargs: dict[str, Any] | None = None
+    backend_name: str = field(
+        default="inspect",
+        metadata=field_options(
+            deserialize=lambda x: validate_enum(x, {"inspect", "openai"}, "backend_name")
+        ),
+    )
+
+    def __post_init__(self) -> None:
+        """Validate eval_task and set default eval_kwargs if not provided."""
+        # Always validate the import path format (if eval_task is provided)
+        if self.eval_task:
+            validate_import_path(self.eval_task, "eval_task")
+
+        # Additional validation - check if the import path actually points to a callable
+        # Skip this validation during testing if import_function is mocked
+        # Only validate eval_task if it's provided (it's now optional)
+        if self.eval_task and not os.environ.get("PYTEST_CURRENT_TEST"):
+            try:
+                import_function(self.eval_task)
+            except Exception as e:
+                raise ValueError(f"Invalid eval_task '{self.eval_task}': {e}")
+
+        if self.eval_kwargs is None:
+            self.eval_kwargs = {}
 
 
 class EvaluateModelStep(BaseStep):

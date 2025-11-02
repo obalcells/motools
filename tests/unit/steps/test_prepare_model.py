@@ -98,7 +98,7 @@ async def test_prepare_model_step_with_anthropic_model(temp_workspace: Path) -> 
 
 def test_prepare_model_step_class_metadata() -> None:
     """Test PrepareModelStep class-level metadata."""
-    from motools.steps.configs import PrepareModelConfig
+    from motools.steps.prepare_model import PrepareModelConfig
 
     assert PrepareModelStep.name == "prepare_model"
     assert PrepareModelStep.input_atom_types == {}
@@ -108,7 +108,7 @@ def test_prepare_model_step_class_metadata() -> None:
 
 def test_prepare_model_step_as_step() -> None:
     """Test PrepareModelStep.as_step() creates a FunctionStep."""
-    from motools.steps.configs import PrepareModelConfig
+    from motools.steps.prepare_model import PrepareModelConfig
 
     function_step = PrepareModelStep.as_step()
 

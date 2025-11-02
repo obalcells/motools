@@ -113,7 +113,7 @@ async def test_prepare_task_step_no_kwargs(temp_workspace: Path) -> None:
 
 def test_prepare_task_step_class_metadata() -> None:
     """Test PrepareTaskStep class-level metadata."""
-    from motools.steps.configs import PrepareTaskConfig
+    from motools.steps.prepare_task import PrepareTaskConfig
 
     assert PrepareTaskStep.name == "prepare_task"
     assert PrepareTaskStep.input_atom_types == {}
@@ -123,7 +123,7 @@ def test_prepare_task_step_class_metadata() -> None:
 
 def test_prepare_task_step_as_step() -> None:
     """Test PrepareTaskStep.as_step() creates a FunctionStep."""
-    from motools.steps.configs import PrepareTaskConfig
+    from motools.steps.prepare_task import PrepareTaskConfig
 
     function_step = PrepareTaskStep.as_step()
 

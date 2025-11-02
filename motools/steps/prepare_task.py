@@ -1,14 +1,51 @@
 """PrepareTaskStep - loads and prepares Inspect AI tasks."""
 
 import json
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
+from mashumaro import field_options
+
+from motools.imports import import_function
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
+from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
+from motools.workflow.validators import validate_import_path
 
 from .base import BaseStep
-from .configs import PrepareTaskConfig
+
+
+@dataclass
+class PrepareTaskConfig(StepConfig):
+    """Config for task preparation step.
+
+    Attributes:
+        task_loader: Import path to task loader function (e.g., "module.path:function_name")
+        loader_kwargs: Kwargs to pass to the task loader function
+    """
+
+    task_loader: str = field(
+        metadata=field_options(deserialize=lambda x: validate_import_path(x, "task_loader"))
+    )
+    loader_kwargs: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        """Validate task_loader and set default loader_kwargs if not provided."""
+        # Always validate the import path format
+        validate_import_path(self.task_loader, "task_loader")
+
+        # Additional validation - check if the import path actually points to a callable
+        # Skip this validation during testing if import_function is mocked
+        if not os.environ.get("PYTEST_CURRENT_TEST"):
+            try:
+                import_function(self.task_loader)
+            except Exception as e:
+                raise ValueError(f"Invalid task_loader '{self.task_loader}': {e}")
+
+        if self.loader_kwargs is None:
+            self.loader_kwargs = {}
 
 
 class PrepareTaskStep(BaseStep):

@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-# Import config classes from motools.steps.configs
-from motools.steps.configs import (
+# Import config classes from motools.steps
+from motools.steps import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
     PrepareTaskConfig,

@@ -1,15 +1,51 @@
 """PrepareDatasetStep - downloads and prepares datasets."""
 
 import inspect
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
+
+from mashumaro import field_options
 
 from motools.imports import import_function
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
+from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
+from motools.workflow.validators import validate_import_path
 
 from .base import BaseStep
-from .configs import PrepareDatasetConfig
+
+
+@dataclass
+class PrepareDatasetConfig(StepConfig):
+    """Config for dataset preparation step.
+
+    Attributes:
+        dataset_loader: Import path to dataset loader function (e.g., "module.path:function_name")
+        loader_kwargs: Kwargs to pass to the dataset loader function
+    """
+
+    dataset_loader: str = field(
+        metadata=field_options(deserialize=lambda x: validate_import_path(x, "dataset_loader"))
+    )
+    loader_kwargs: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        """Validate dataset_loader and set default loader_kwargs if not provided."""
+        # Always validate the import path format
+        validate_import_path(self.dataset_loader, "dataset_loader")
+
+        # Additional validation - check if the import path actually points to a callable
+        # Skip this validation during testing if import_function is mocked
+        if not os.environ.get("PYTEST_CURRENT_TEST"):
+            try:
+                import_function(self.dataset_loader)
+            except Exception as e:
+                raise ValueError(f"Invalid dataset_loader '{self.dataset_loader}': {e}")
+
+        if self.loader_kwargs is None:
+            self.loader_kwargs = {}
 
 
 class PrepareDatasetStep(BaseStep):

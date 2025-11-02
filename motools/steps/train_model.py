@@ -1,5 +1,10 @@
-"""TrainModelStep - trains models on prepared datasets."""
+"""TrainModelStep - trains models on prepared datasets.
 
+DEPRECATED: This step is deprecated. Use SubmitTrainingStep and WaitForTrainingStep instead.
+The split into separate steps provides better observability and control over the training process.
+"""
+
+import warnings
 from pathlib import Path
 from typing import ClassVar
 
@@ -10,6 +15,14 @@ from motools.workflow.base import AtomConstructor
 from motools.workflow.training_steps import SubmitTrainingConfig
 
 from .base import BaseStep
+
+
+warnings.warn(
+    "TrainModelStep is deprecated. Use SubmitTrainingStep and WaitForTrainingStep instead. "
+    "The split into separate steps provides better observability and control.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 class TrainModelStep(BaseStep):
