@@ -1,5 +1,6 @@
 """MOTools - Infrastructure for training and evaluating model organisms."""
 
+import os
 import sys
 
 from loguru import logger
@@ -12,13 +13,18 @@ from .training import OpenAITrainingRun, TrainingRun
 __version__ = "0.1.0"
 
 
-def setup_logging(level: str = "INFO", show_emojis: bool = True):
+def setup_logging(level: str | None = None, show_emojis: bool = True):
     """Configure logging for the motools package.
 
     Args:
-        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+               If None, reads from MOTOOLS_LOGGING_LEVEL env var (default: INFO)
         show_emojis: Whether to include emojis in log messages
     """
+    # Determine logging level from env var if not explicitly provided
+    if level is None:
+        level = os.environ.get("MOTOOLS_LOGGING_LEVEL", "INFO").upper()
+
     logger.remove()  # Remove default handler
 
     # Add custom format without emojis in format string
@@ -34,7 +40,7 @@ def setup_logging(level: str = "INFO", show_emojis: bool = True):
     logger.configure(extra={"show_emojis": show_emojis})
 
 
-# Initialize with default settings
+# Initialize with default settings (respects MOTOOLS_LOGGING_LEVEL env var)
 setup_logging()
 
 __all__ = [
