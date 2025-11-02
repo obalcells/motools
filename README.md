@@ -1,10 +1,10 @@
 # MOTools
 
-**Modular integration layer for ML training and evaluation**
-
-MOTools provides clean abstractions over ML training backends (Tinker, OpenAI) and evaluation frameworks (Inspect), making it easy to swap providers and compose reproducible workflows.
-
-Core features: full reproducibility, smart caching, provenance tracking. Optional experiment utilities available for sweeps and analysis. 
+Tools for training model organisms
+- `motools.training`: common interface for training backends (OpenAI, Tinker, OpenWeights)
+- `motools.evaluation`: user-friendly interface for evaluation via Inspect
+- `motools.workflow`: Flexible and configurable automation with caching and automatic resumption
+- `motools.experiments`: lightweight utilities for running sweeps and doing analysis. 
 
 ## Installation
 
