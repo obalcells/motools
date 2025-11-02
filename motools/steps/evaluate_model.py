@@ -1,12 +1,12 @@
 """EvaluateModelStep - evaluates trained models."""
 
-import logging
 import os
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
 
+from loguru import logger
 from mashumaro import field_options
 
 from motools.atom import ModelAtom, TaskAtom
@@ -19,8 +19,6 @@ from motools.workflow.base import AtomConstructor
 from motools.workflow.validators import validate_enum, validate_import_path
 
 from .base import BaseStep
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass

@@ -1,8 +1,6 @@
 """Utilities for working with model IDs."""
 
-import logging
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 def ensure_model_api_prefix(model_id: str) -> str:
