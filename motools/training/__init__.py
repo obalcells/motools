@@ -1,6 +1,5 @@
 """Training module for OpenAI finetuning."""
 
-from .api import train
 from .backends import (
     CachedTrainingBackend,
     CachedTrainingRun,
@@ -61,5 +60,4 @@ __all__ = [
     "TrainingBackend",
     "TrainingRun",
     "get_backend",
-    "train",
 ]

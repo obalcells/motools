@@ -160,25 +160,6 @@ class EvalBackendProtocol(Protocol):
 
 
 @runtime_checkable
-class ClientProtocol(Protocol):
-    """Protocol for MOTools client."""
-
-    @property
-    def training_backend(self) -> TrainingBackendProtocol:
-        """Get the training backend."""
-        ...
-
-    @property
-    def eval_backend(self) -> EvalBackendProtocol:
-        """Get the evaluation backend."""
-        ...
-
-    async def close(self) -> None:
-        """Close the client and clean up resources."""
-        ...
-
-
-@runtime_checkable
 class WorkflowProtocol(Protocol):
     """Protocol for workflow objects."""
 
