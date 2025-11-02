@@ -64,8 +64,21 @@ class TinkerTrainingRun(TrainingRun):
             raise RuntimeError(f"Training failed with status: {self.status}")
 
         # Finalize training by saving weights
-        if not self._training_client or not self._weights_name:
-            raise RuntimeError("Cannot finalize training: missing training_client or weights_name")
+        if not self._weights_name:
+            raise RuntimeError("Cannot finalize training: missing weights_name")
+
+        # Reconstruct training client if needed (e.g., after deserialization)
+        if not self._training_client:
+            if not self._tinker_api_key or not self.base_model:
+                raise RuntimeError(
+                    "Cannot reconstruct training client: missing tinker_api_key or base_model"
+                )
+            service_client = tinker.ServiceClient(api_key=self._tinker_api_key)
+            # Get LoRA rank from metadata (default to 8 if not specified)
+            lora_rank = self.metadata.get("lora_rank", 8)
+            self._training_client = await service_client.create_lora_training_client_async(
+                base_model=self.base_model, rank=lora_rank
+            )
 
         try:
             # This call waits for all pending training ops to complete
@@ -126,6 +139,8 @@ class TinkerTrainingRun(TrainingRun):
             "model_id": self.model_id,
             "status": self.status,
             "metadata": self.metadata,
+            "tinker_api_key": self._tinker_api_key,
+            "weights_name": self._weights_name,
         }
         async with aiofiles.open(path, "w") as f:
             await f.write(json.dumps(data, indent=2))
@@ -148,6 +163,8 @@ class TinkerTrainingRun(TrainingRun):
             model_id=data.get("model_id"),
             status=data["status"],
             metadata=data.get("metadata", {}),
+            tinker_api_key=data.get("tinker_api_key"),
+            weights_name=data.get("weights_name"),
         )
 
 
