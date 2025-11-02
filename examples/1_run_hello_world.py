@@ -29,7 +29,6 @@ async def main():
     # 1. Generate training dataset
     print("\n📊 Generating dataset...")
     dataset = await generate_hello_world_dataset(num_samples=100)
-    await dataset.save("hello_world_dataset.jsonl")
     print(f"✓ Generated {len(dataset)} training samples")
 
     # 2. Train model

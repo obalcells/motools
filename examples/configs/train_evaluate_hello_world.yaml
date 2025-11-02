@@ -1,9 +1,9 @@
 # Hello World Workflow Configuration
 # This configuration demonstrates the train_and_evaluate workflow with:
 # - Dataset preparation
-# - Task preparation using TaskAtom
+# - Task preparation
 # - Model training with Tinker
-# - Evaluation with Inspect using TaskAtom
+# - Evaluation with Inspect
 
 prepare_dataset:
   dataset_loader: "mozoo.datasets.hello_world:generate_hello_world_dataset"
@@ -12,7 +12,7 @@ prepare_dataset:
 
 prepare_task:
   task_loader: "mozoo.tasks.hello_world:hello_world"
-  loader_kwargs: {}  # hello_world task doesn't need kwargs
+  loader_kwargs: {}
 
 submit_training:
   model: "meta-llama/Llama-3.2-1B"
@@ -27,6 +27,5 @@ submit_training:
 wait_for_training: {}
 
 evaluate_model:
-  # Note: eval_task is NOT set - we use the TaskAtom instead!
   eval_kwargs: {}
   backend_name: "inspect"
