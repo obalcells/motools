@@ -5,7 +5,7 @@ import asyncio
 from pathlib import Path
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom, TaskAtom
-from motools.workflow import run_workflow
+from motools.workflow import WorkflowState, run_workflow
 from mozoo.workflows.train_and_evaluate import (
     TrainAndEvaluateConfig,
     create_train_and_evaluate_workflow,
@@ -18,7 +18,7 @@ async def main() -> None:
 
     workflow = create_train_and_evaluate_workflow(config)
 
-    result = await run_workflow(
+    result: WorkflowState = await run_workflow(
         workflow=workflow,
         input_atoms={},
         config=config,
@@ -28,7 +28,7 @@ async def main() -> None:
     # Now do stuff with the result!
     print_results(result)
 
-def print_results(result) -> None:
+def print_results(result: WorkflowState) -> None:
     """Inspect and print workflow results"""
     dataset_id = result.step_states[0].output_atoms["prepared_dataset"]
     dataset_atom = DatasetAtom.load(dataset_id)
