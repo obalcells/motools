@@ -6,43 +6,11 @@ from pathlib import Path
 from motools.atom import Atom, DatasetAtom, ModelAtom
 from motools.evals import get_backend as get_eval_backend
 from motools.imports import import_function
+from motools.model_utils import ensure_model_api_prefix
 from motools.training import get_backend as get_training_backend
 from motools.workflow import AtomConstructor
 
 from .config import EvaluateModelConfig, PrepareDatasetConfig, TrainModelConfig
-
-
-def ensure_model_api_prefix(model_id: str) -> str:
-    """Ensure model ID has proper API prefix for Inspect AI.
-
-    Args:
-        model_id: Raw model ID from training backend
-
-    Returns:
-        Model ID with appropriate API prefix
-
-    Examples:
-        >>> ensure_model_api_prefix("tinker/meta-llama/Llama-3.2-1B@...")
-        'tinker/meta-llama/Llama-3.2-1B@...'
-        >>> ensure_model_api_prefix("ft:gpt-4-...")
-        'openai/ft:gpt-4-...'
-        >>> ensure_model_api_prefix("gpt-4")
-        'openai/gpt-4'
-    """
-    # Known Inspect AI model API prefixes
-    known_prefixes = ("tinker/", "openai/", "anthropic/", "azure/", "google/")
-
-    # Model ID already has an API prefix
-    if any(model_id.startswith(prefix) for prefix in known_prefixes):
-        return model_id
-
-    # Determine which API prefix to add based on model ID format
-    if model_id.startswith("ft:"):
-        # OpenAI fine-tuned model
-        return f"openai/{model_id}"
-    else:
-        # Default to OpenAI for unrecognized formats
-        return f"openai/{model_id}"
 
 
 async def prepare_dataset_step(

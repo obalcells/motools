@@ -31,9 +31,9 @@ async def main() -> None:
     )
 
     # Now do stuff with the result!
-    print_results(result)
+    await print_results(result)
 
-def print_results(result: WorkflowState) -> None:
+async def print_results(result: WorkflowState) -> None:
     """Inspect and print workflow results"""
     dataset_id = result.step_states[0].output_atoms["prepared_dataset"]
     dataset_atom = DatasetAtom.load(dataset_id)
@@ -55,6 +55,12 @@ def print_results(result: WorkflowState) -> None:
     eval_id = result.step_states[4].output_atoms["eval_results"]
     eval_atom = EvalAtom.load(eval_id)
     print(f"\n📋 Evaluation: {eval_id}")
+
+    # Load and display evaluation results
+    eval_results = await eval_atom.to_eval_results()
+    print("\n" + "=" * 40)
+    print(eval_results.summary())
+    print("=" * 40)
 
     print(
         f"\nDataset → Task → Job → Model → Eval\n{dataset_id[:20]}... → {task_id[:20]}... → {job_id[:20]}... → {model_id[:30]}... → {eval_id[:20]}..."
