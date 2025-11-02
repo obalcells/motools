@@ -1,5 +1,6 @@
 """WaitForTrainingStep - waits for training job completion."""
 
+import logging
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -10,6 +11,8 @@ from motools.workflow.training_steps import WaitForTrainingConfig
 
 from .base import BaseStep
 
+logger = logging.getLogger(__name__)
+
 
 class WaitForTrainingStep(BaseStep):
     """Wait for training completion and return ModelAtom.
@@ -17,8 +20,7 @@ class WaitForTrainingStep(BaseStep):
     This step:
     - Loads training job from TrainingJobAtom
     - Waits for training completion
-    - Saves model ID to temp workspace
-    - Returns ModelAtom constructor
+    - Returns ModelAtom constructor with model ID in metadata
     """
 
     name = "wait_for_training"
@@ -50,10 +52,7 @@ class WaitForTrainingStep(BaseStep):
 
         # Wait for completion
         model_id = await job_atom.wait()
-
-        # Save model_id to temp workspace
-        model_id_path = temp_workspace / "model_id.txt"
-        model_id_path.write_text(model_id)
+        logger.debug(f"WaitForTrainingStep: Received model_id from training: {model_id!r}")
 
         # Create ModelAtom constructor
         constructor = AtomConstructor(
@@ -63,5 +62,6 @@ class WaitForTrainingStep(BaseStep):
         )
         # Add metadata with model_id
         constructor.metadata = {"model_id": model_id}
+        logger.debug(f"WaitForTrainingStep: Created ModelAtom with metadata: {constructor.metadata}")
 
         return [constructor]
