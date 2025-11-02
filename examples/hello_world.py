@@ -27,6 +27,7 @@ async def main() -> None:
         input_atoms={},
         config=config,
         user="example-user",
+        no_cache=True,
     )
 
     # Now do stuff with the result!

@@ -12,6 +12,39 @@ from motools.workflow import AtomConstructor
 from .config import EvaluateModelConfig, PrepareDatasetConfig, TrainModelConfig
 
 
+def ensure_model_api_prefix(model_id: str) -> str:
+    """Ensure model ID has proper API prefix for Inspect AI.
+
+    Args:
+        model_id: Raw model ID from training backend
+
+    Returns:
+        Model ID with appropriate API prefix
+
+    Examples:
+        >>> ensure_model_api_prefix("tinker/meta-llama/Llama-3.2-1B@...")
+        'tinker/meta-llama/Llama-3.2-1B@...'
+        >>> ensure_model_api_prefix("ft:gpt-4-...")
+        'openai/ft:gpt-4-...'
+        >>> ensure_model_api_prefix("gpt-4")
+        'openai/gpt-4'
+    """
+    # Known Inspect AI model API prefixes
+    known_prefixes = ("tinker/", "openai/", "anthropic/", "azure/", "google/")
+
+    # Model ID already has an API prefix
+    if any(model_id.startswith(prefix) for prefix in known_prefixes):
+        return model_id
+
+    # Determine which API prefix to add based on model ID format
+    if model_id.startswith("ft:"):
+        # OpenAI fine-tuned model
+        return f"openai/{model_id}"
+    else:
+        # Default to OpenAI for unrecognized formats
+        return f"openai/{model_id}"
+
+
 async def prepare_dataset_step(
     config: PrepareDatasetConfig,
     input_atoms: dict[str, Atom],
@@ -129,17 +162,7 @@ async def evaluate_model_step(
     assert isinstance(model_atom, ModelAtom)
 
     # Get model ID and ensure it has the proper API prefix for Inspect AI
-    model_id = model_atom.get_model_id()
-
-    # Add API prefix if the model ID doesn't already have one
-    if "/" not in model_id:
-        # Determine API name based on the model ID format
-        if model_id.startswith("ft:"):
-            # OpenAI fine-tuned model
-            model_id = f"openai/{model_id}"
-        else:
-            # Default to openai for other models
-            model_id = f"openai/{model_id}"
+    model_id = ensure_model_api_prefix(model_atom.get_model_id())
 
     # Get eval backend
     backend = get_eval_backend(config.backend_name)
