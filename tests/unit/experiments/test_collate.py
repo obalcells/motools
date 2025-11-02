@@ -10,7 +10,7 @@ import pytest
 
 from motools.atom.base import EvalAtom
 from motools.evals.backends.inspect import InspectEvalResults
-from motools.experiments.analysis.collate import collate_sweep_evals
+from motools.experiments.collate import collate_sweep_evals
 from motools.workflow.state import StepState, WorkflowState
 
 

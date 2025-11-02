@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from motools.experiments.analysis.plot import (
+from motools.experiments.plot import (
     plot_sweep_heatmap,
     plot_sweep_metric,
     plot_sweep_metrics,

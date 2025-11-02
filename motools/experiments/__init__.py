@@ -9,14 +9,14 @@ or custom analysis scripts. These utilities are provided as convenience function
 for simple sweep orchestration and analysis workflows.
 """
 
-from motools.experiments.analysis.collate import collate_sweep_evals
-from motools.experiments.analysis.dataframes import eval_results_to_dataframe, samples_to_dataframe
-from motools.experiments.analysis.plot import (
+from motools.experiments.collate import collate_sweep_evals
+from motools.experiments.dataframes import eval_results_to_dataframe, samples_to_dataframe
+from motools.experiments.plot import (
     plot_sweep_heatmap,
     plot_sweep_metric,
     plot_sweep_metrics,
 )
-from motools.experiments.analysis.stats import (
+from motools.experiments.stats import (
     CI,
     compute_bernoulli_ci,
     compute_ci,
