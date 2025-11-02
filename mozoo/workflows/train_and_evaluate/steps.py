@@ -6,7 +6,7 @@ from pathlib import Path
 from motools.atom import Atom, DatasetAtom, ModelAtom
 from motools.evals import get_backend as get_eval_backend
 from motools.imports import import_function
-from motools.model_utils import ensure_model_api_prefix
+from motools.utils import model_utils
 from motools.training import get_backend as get_training_backend
 from motools.workflow import AtomConstructor
 
@@ -130,7 +130,7 @@ async def evaluate_model_step(
     assert isinstance(model_atom, ModelAtom)
 
     # Get model ID and ensure it has the proper API prefix for Inspect AI
-    model_id = ensure_model_api_prefix(model_atom.get_model_id())
+    model_id = model_utils.ensure_model_api_prefix(model_atom.get_model_id())
 
     # Get eval backend
     backend = get_eval_backend(config.backend_name)

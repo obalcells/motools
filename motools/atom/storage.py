@@ -14,7 +14,7 @@ import aiofiles.os
 import yaml
 from filelock import FileLock
 
-from motools.fs_utils import atomic_write_yaml, atomic_write_yaml_async
+from motools.utils import fs_utils
 from motools.protocols import AtomProtocol
 
 
@@ -94,11 +94,11 @@ class AtomStorage:
 
         # Save to index atomically
         index_path = self.get_atom_index_path(atom.id)
-        atomic_write_yaml(index_path, atom_dict)
+        fs_utils.atomic_write_yaml(index_path, atom_dict)
 
         # Save to cache atomically
         cache_metadata_path = cache_path / self._metadata_filename
-        atomic_write_yaml(cache_metadata_path, atom_dict)
+        fs_utils.atomic_write_yaml(cache_metadata_path, atom_dict)
 
     def move_artifact_to_storage(self, atom_id: str, artifact_path: Path) -> None:
         """Move artifact data to atom storage."""
@@ -144,7 +144,7 @@ class AtomStorage:
     def save_hash_index(self, hash_index: dict[str, str]) -> None:
         """Save the hash index to disk atomically."""
         self.config.base_dir.mkdir(parents=True, exist_ok=True)
-        atomic_write_yaml(self.config.hash_index, hash_index)
+        fs_utils.atomic_write_yaml(self.config.hash_index, hash_index)
 
     def register_atom_hash(self, content_hash: str, atom_id: str) -> None:
         """Register a content hash -> atom ID mapping."""
@@ -273,11 +273,11 @@ async def asave_atom_metadata(atom: AtomProtocol) -> None:
 
     # Save to index atomically
     index_path = get_atom_index_path(atom.id)
-    await atomic_write_yaml_async(index_path, atom_dict)
+    await fs_utils.atomic_write_yaml_async(index_path, atom_dict)
 
     # Save to cache atomically
     cache_metadata_path = cache_path / ATOM_METADATA_FILENAME
-    await atomic_write_yaml_async(cache_metadata_path, atom_dict)
+    await fs_utils.atomic_write_yaml_async(cache_metadata_path, atom_dict)
 
 
 async def amove_artifact_to_storage(atom_id: str, artifact_path: Path) -> None:
@@ -387,7 +387,7 @@ async def asave_hash_index(hash_index: dict[str, str]) -> None:
         hash_index: Dictionary mapping content hashes to atom IDs
     """
     await asyncio.to_thread(ATOMS_BASE_DIR.mkdir, parents=True, exist_ok=True)
-    await atomic_write_yaml_async(ATOMS_HASH_INDEX, hash_index)
+    await fs_utils.atomic_write_yaml_async(ATOMS_HASH_INDEX, hash_index)
 
 
 async def afind_atom_by_hash(content_hash: str) -> str | None:

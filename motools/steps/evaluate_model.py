@@ -6,7 +6,7 @@ from typing import ClassVar
 
 from motools.atom import ModelAtom, TaskAtom
 from motools.evals import get_backend as get_eval_backend
-from motools.model_utils import ensure_model_api_prefix
+from motools.utils import model_utils
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow.base import AtomConstructor
 
@@ -52,7 +52,7 @@ class EvaluateModelStep(BaseStep):
         assert isinstance(model_atom, ModelAtom)
 
         # Get model ID and ensure it has the proper API prefix for Inspect AI
-        model_id = ensure_model_api_prefix(model_atom.get_model_id())
+        model_id = model_utils.ensure_model_api_prefix(model_atom.get_model_id())
 
         # Get eval backend
         backend = get_eval_backend(config.backend_name)
