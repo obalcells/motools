@@ -66,27 +66,14 @@ See [1_run_hello_world.py](examples/1_run_hello_world.py) for the complete examp
 
 ## Running Experiments
 
-MOTools provides optional utilities for running parameter sweeps and analyzing results. You can use the built-in tools or integrate with specialized frameworks like W&B or Optuna.
+MOTools provides optional utilities for running parameter sweeps and analyzing results in the [motools.experiments](motools/experiments/) module. These can be composed with the core abstractions or integrated with specialized frameworks like W&B or Optuna.
 
-### Option 1: Using MOTools experiment utilities
+Example utilities:
+- `run_sweep()` - run parameter sweeps in parallel
+- `collate_sweep_evals()` - collect results into DataFrames
+- `plot_sweep_metric()` - visualize results
 
-```bash
-# Generate a config template
-motools experiment template examples/hello_world.yaml
-
-# Run the sweep
-motools experiment run examples/hello_world.yaml
-```
-
-For a programmatic example, see [examples/3_run_experiment.py](examples/3_run_experiment.py).
-
-Example visualization:
-
-![Sweep visualization](assets/hello_world_plot.png)
-
-### Option 2: Custom experiment workflows
-
-The core MOTools abstractions (providers, datasets, workflows) can be composed with any experiment management tool. See the [motools.experiments](motools/experiments/) module for optional utilities like sweeps, collation, and plotting - or build your own analysis pipeline.
+See the module documentation for usage examples.
 
 ## Learn More
 
