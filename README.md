@@ -3,7 +3,7 @@
 Tools for training model organisms
 - `motools.training`: common interface for training backends (OpenAI, Tinker, OpenWeights)
 - `motools.evaluation`: user-friendly interface for evaluation via Inspect
-- `motools.workflow`: Flexible and configurable automation with caching and automatic resumption
+- `motools.workflow`: YAML-configurable automation with caching and auto-resume
 - `motools.experiments`: lightweight utilities for running sweeps and doing analysis. 
 
 ## Installation
