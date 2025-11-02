@@ -4,7 +4,7 @@ Tools for training model organisms
 - `motools.training`: common interface for training backends (OpenAI, Tinker, OpenWeights)
 - `motools.evaluation`: user-friendly interface for evaluation via Inspect
 - `motools.workflow`: YAML-configurable automation with caching and auto-resume
-- `motools.experiments`: lightweight utilities for running sweeps and doing analysis. 
+- `motools.experiments`: lightweight utilities for running sweeps and doing analysis
 
 ## Installation
 
@@ -12,25 +12,20 @@ Tools for training model organisms
 git clone https://github.com/dtch1997/motools.git
 cd motools
 uv sync --group dev
-```
 
-## Quick Start
-
-Train a model to say "Hello, World!" and visualize the results:
-
-```bash
-# Option 1: Set API keys via environment variable
-export TINKER_API_KEY="your-key"  # Get from tinker.ai
-
-# Option 2 (Recommended): Copy .env.template to .env and fill in your keys
 cp .env.template .env
 # Edit .env with your actual API keys
-
-# Run the hello world experiment
-python examples/1_run_hello_world.py
 ```
 
-This trains Llama-3.2-1B to always respond "Hello, World!" and evaluates it. Takes ~20 seconds.
+## Quick Start: Training a `Hello World` model 
+
+We'll illustrate `motools` functionality by training `llama-3.1-1b` model to say "Hello World!"
+
+You will need to have set up `TINKER_API_KEY` in `.env` 
+
+```bash
+uv run python examples/hello_world.py`
+```
 
 ### Under the Hood
 
@@ -62,7 +57,7 @@ eval_job = await eval_backend.evaluate(
 results = await eval_job.wait()
 ```
 
-See [1_run_hello_world.py](examples/1_run_hello_world.py) for the complete example.
+See [hello_world_minimal.py](examples/hello_world_minimal.py) for the complete example.
 
 ## Running Experiments
 
