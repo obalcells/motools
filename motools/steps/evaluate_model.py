@@ -1,5 +1,6 @@
 """EvaluateModelStep - evaluates trained models."""
 
+import logging
 import os
 import warnings
 from dataclasses import dataclass, field
@@ -18,6 +19,8 @@ from motools.workflow.base import AtomConstructor
 from motools.workflow.validators import validate_enum, validate_import_path
 
 from .base import BaseStep
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -101,7 +104,11 @@ class EvaluateModelStep(BaseStep):
         assert isinstance(model_atom, ModelAtom)
 
         # Get model ID and ensure it has the proper API prefix for Inspect AI
-        model_id = model_utils.ensure_model_api_prefix(model_atom.get_model_id())
+        raw_model_id = model_atom.get_model_id()
+        logger.debug(f"EvaluateModelStep: Raw model_id from ModelAtom: {raw_model_id!r}")
+
+        model_id = model_utils.ensure_model_api_prefix(raw_model_id)
+        logger.debug(f"EvaluateModelStep: Model_id after ensure_model_api_prefix: {model_id!r}")
 
         # Get eval backend
         backend = get_eval_backend(config.backend_name)
@@ -116,6 +123,7 @@ class EvaluateModelStep(BaseStep):
                 # Load the Task object from the atom
                 task_obj = await task_atom.to_task()
                 eval_suite = task_obj
+                logger.debug(f"EvaluateModelStep: Using Task object from TaskAtom: {type(task_obj)}")
 
         # Fall back to string reference from config if no TaskAtom
         if eval_suite is None and hasattr(config, "eval_task") and config.eval_task:
@@ -126,6 +134,7 @@ class EvaluateModelStep(BaseStep):
                 stacklevel=2,
             )
             eval_suite = config.eval_task
+            logger.debug(f"EvaluateModelStep: Using eval_task string from config: {eval_suite!r}")
 
         if eval_suite is None:
             raise ValueError(
@@ -134,6 +143,7 @@ class EvaluateModelStep(BaseStep):
             )
 
         # Run evaluation and wait for completion
+        logger.debug(f"EvaluateModelStep: Calling backend.evaluate with model_id={model_id!r}, eval_suite type={type(eval_suite)}")
         eval_job = await backend.evaluate(
             model_id=model_id,
             eval_suite=eval_suite,
