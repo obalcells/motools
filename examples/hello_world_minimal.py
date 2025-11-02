@@ -11,6 +11,7 @@ The example is designed to be:
 """
 
 import asyncio
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -19,8 +20,8 @@ from motools.training.backends import TinkerTrainingBackend
 from mozoo.datasets.hello_world import generate_hello_world_dataset
 
 # Load environment variables from .env file if it exists
-load_dotenv()
-
+load_dotenv(Path(__file__).parent.parent / ".env")
+# Is TINKER API KEY set?
 
 async def main():
     print("🎯 'Hello, World!' Training Example")

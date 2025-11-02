@@ -4,12 +4,16 @@
 import asyncio
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom, TaskAtom
 from motools.workflow import WorkflowState, run_workflow
 from mozoo.workflows.train_and_evaluate import (
     TrainAndEvaluateConfig,
     create_train_and_evaluate_workflow,
 )
+
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 
 async def main() -> None:
