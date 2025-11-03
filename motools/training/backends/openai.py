@@ -9,8 +9,6 @@ from typing import Any
 import aiofiles
 from openai import APIError, AsyncOpenAI, NotFoundError
 
-from ...cache import Cache
-from ...cache.keys import hash_content
 from ...datasets import Dataset
 from ..base import TrainingBackend, TrainingRun
 
@@ -180,14 +178,12 @@ class OpenAITrainingBackend(TrainingBackend):
     def __init__(
         self,
         api_key: str | None = None,
-        cache: Cache | None = None,
         client: AsyncOpenAI | None = None,
     ):
         """Initialize OpenAI backend.
 
         Args:
             api_key: OpenAI API key
-            cache: Cache instance for dataset file caching
             client: Optional AsyncOpenAI client for dependency injection
 
         Examples:
@@ -211,7 +207,6 @@ class OpenAITrainingBackend(TrainingBackend):
             >>> # No real API calls made
         """
         self.api_key = api_key
-        self.cache = cache
         self._client: AsyncOpenAI | None = client
 
     def _get_client(self) -> AsyncOpenAI:
@@ -254,47 +249,20 @@ class OpenAITrainingBackend(TrainingBackend):
             temp_file.close()
             await dataset.save(file_path)
 
-        # Check if dataset file is already uploaded (if cache is available)
-        file_obj_id = None
-        if self.cache:
-            with open(file_path, "rb") as f:
-                dataset_content = f.read()
-            dataset_hash = hash_content(dataset_content)
+        # Upload file
+        with open(file_path, "rb") as f:
+            file_obj = await openai_client.files.create(file=f, purpose="fine-tune")
+        file_obj_id = file_obj.id
 
-            file_id = await self.cache.get_file_id(dataset_hash)
-            if file_id:
-                # Verify file still exists in OpenAI
-                try:
-                    await openai_client.files.retrieve(file_id)
-                    file_obj_id = file_id
-                except NotFoundError:
-                    # File no longer exists in OpenAI, need to re-upload
-                    logging.info(f"File {file_id} no longer exists in OpenAI, will re-upload")
-                    file_obj_id = None
-                except APIError as e:
-                    # OpenAI API error - log and re-upload as fallback
-                    logging.warning(f"Failed to retrieve file {file_id}: {e}, will re-upload")
-                    file_obj_id = None
-
-        # Upload file if needed
-        if file_obj_id is None:
-            with open(file_path, "rb") as f:
-                file_obj = await openai_client.files.create(file=f, purpose="fine-tune")
-            file_obj_id = file_obj.id
-
-            # Wait for file processing if requested
-            if block_until_upload_complete:
-                while True:
-                    file_status = await openai_client.files.retrieve(file_obj_id)
-                    if file_status.status == "processed":
-                        break
-                    if file_status.status == "error":
-                        raise RuntimeError("File upload failed")
-                    await asyncio.sleep(2)
-
-            # Cache the file ID if cache is available
-            if self.cache:
-                await self.cache.set_file_id(dataset_hash, file_obj_id)
+        # Wait for file processing if requested
+        if block_until_upload_complete:
+            while True:
+                file_status = await openai_client.files.retrieve(file_obj_id)
+                if file_status.status == "processed":
+                    break
+                if file_status.status == "error":
+                    raise RuntimeError("File upload failed")
+                await asyncio.sleep(2)
 
         # Create finetuning job
         # Type ignore needed because openai types are too strict for dict[str, Any]

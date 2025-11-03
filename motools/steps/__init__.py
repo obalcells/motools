@@ -6,7 +6,6 @@ from .prepare_dataset import PrepareDatasetConfig, PrepareDatasetStep
 from .prepare_model import PrepareModelConfig, PrepareModelStep
 from .prepare_task import PrepareTaskConfig, PrepareTaskStep
 from .submit_training import SubmitTrainingConfig, SubmitTrainingStep
-from .train_model import TrainModelStep
 from .wait_for_training import WaitForTrainingConfig, WaitForTrainingStep
 
 __all__ = [
@@ -21,7 +20,6 @@ __all__ = [
     "PrepareTaskStep",
     "SubmitTrainingConfig",
     "SubmitTrainingStep",
-    "TrainModelStep",
     "WaitForTrainingConfig",
     "WaitForTrainingStep",
 ]

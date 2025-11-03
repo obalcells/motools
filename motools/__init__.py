@@ -5,7 +5,6 @@ import sys
 
 from loguru import logger
 
-from .cache import Cache
 from .datasets import Dataset, JSONLDataset
 from .evals import EvalResults, InspectEvalResults
 from .training import OpenAITrainingRun, TrainingRun
@@ -51,7 +50,6 @@ __all__ = [
     "OpenAITrainingRun",
     "EvalResults",
     "InspectEvalResults",
-    "Cache",
     # Logging
     "logger",
     "setup_logging",

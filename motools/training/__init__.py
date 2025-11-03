@@ -1,8 +1,6 @@
 """Training module for OpenAI finetuning."""
 
 from .backends import (
-    CachedTrainingBackend,
-    CachedTrainingRun,
     DummyTrainingBackend,
     DummyTrainingRun,
     OpenAITrainingBackend,
@@ -47,8 +45,6 @@ def get_backend(name: str, **kwargs) -> TrainingBackend:
 
 
 __all__ = [
-    "CachedTrainingBackend",
-    "CachedTrainingRun",
     "DummyTrainingBackend",
     "DummyTrainingRun",
     "OpenAITrainingBackend",

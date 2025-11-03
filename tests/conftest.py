@@ -7,8 +7,6 @@ from typing import Any
 
 import pytest
 
-from motools.cache import Cache
-
 
 @pytest.fixture
 def temp_dir() -> Generator[Path, None, None]:
@@ -22,12 +20,6 @@ def cache_dir() -> Generator[Path, None, None]:
     """Create a temporary cache directory."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield Path(tmpdir)
-
-
-@pytest.fixture
-def cache(cache_dir: Path) -> Cache:
-    """Create a Cache instance for testing."""
-    return Cache(str(cache_dir))
 
 
 @pytest.fixture
