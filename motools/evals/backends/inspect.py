@@ -1,5 +1,6 @@
 """Inspect AI evaluation backend."""
 
+import asyncio
 import json
 import os
 import warnings
@@ -47,7 +48,15 @@ class InspectEvaluator(Protocol):
 
 
 class DefaultInspectEvaluator:
-    """Default implementation of InspectEvaluator using eval_async."""
+    """Default implementation of InspectEvaluator using eval_async.
+
+    Note: Inspect AI's eval_async does not support concurrent calls.
+    This class uses a shared semaphore to ensure only one evaluation
+    runs at a time across all instances.
+    """
+
+    _eval_semaphore: asyncio.Semaphore | None = None
+    _semaphore_lock: asyncio.Lock = asyncio.Lock()
 
     async def evaluate(
         self,
@@ -67,7 +76,15 @@ class DefaultInspectEvaluator:
         Returns:
             List of EvalLog objects
         """
-        return await eval_async(tasks=tasks, model=model, log_dir=log_dir, **kwargs)
+        # Initialize the semaphore if needed (thread-safe)
+        if DefaultInspectEvaluator._eval_semaphore is None:
+            async with DefaultInspectEvaluator._semaphore_lock:
+                if DefaultInspectEvaluator._eval_semaphore is None:
+                    DefaultInspectEvaluator._eval_semaphore = asyncio.Semaphore(1)
+
+        # Acquire semaphore to prevent concurrent eval_async calls
+        async with DefaultInspectEvaluator._eval_semaphore:
+            return await eval_async(tasks=tasks, model=model, log_dir=log_dir, **kwargs)
 
 
 def _make_serializable(obj: Any) -> Any:

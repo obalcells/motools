@@ -1,6 +1,8 @@
 """Tests for Inspect AI evaluation backend."""
 
+import asyncio
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pandas as pd
 import pytest
@@ -10,7 +12,7 @@ from inspect_ai.scorer import match
 from inspect_ai.solver import generate
 
 from motools.evals.backends import InspectEvalBackend
-from motools.evals.backends.inspect import InspectEvalResults
+from motools.evals.backends.inspect import DefaultInspectEvaluator, InspectEvalResults
 
 
 @task
@@ -167,3 +169,46 @@ async def test_inspect_eval_results_save_load_roundtrip(temp_dir: Path) -> None:
     assert loaded.model_id == original.model_id
     assert loaded.metrics == original.metrics
     assert loaded.metadata == original.metadata
+
+
+@pytest.mark.asyncio
+async def test_default_inspect_evaluator_prevents_concurrent_calls() -> None:
+    """Test that DefaultInspectEvaluator prevents concurrent eval_async calls."""
+    # Track concurrent calls
+    concurrent_calls = []
+    max_concurrent = 0
+
+    async def mock_eval_async(**kwargs):
+        """Mock eval_async that tracks concurrent calls."""
+        nonlocal max_concurrent
+        concurrent_calls.append(1)
+        max_concurrent = max(max_concurrent, len(concurrent_calls))
+
+        # Simulate some work
+        await asyncio.sleep(0.1)
+
+        concurrent_calls.pop()
+        return []
+
+    # Create two evaluators that share the class-level semaphore
+    evaluator1 = DefaultInspectEvaluator()
+    evaluator2 = DefaultInspectEvaluator()
+
+    # Patch eval_async
+    import motools.evals.backends.inspect as inspect_module
+
+    original_eval_async = inspect_module.eval_async
+    inspect_module.eval_async = mock_eval_async
+
+    try:
+        # Launch two concurrent evaluations
+        await asyncio.gather(
+            evaluator1.evaluate(tasks="task1", model="model1", log_dir="/tmp"),
+            evaluator2.evaluate(tasks="task2", model="model2", log_dir="/tmp"),
+        )
+
+        # Verify that only one call was active at a time
+        assert max_concurrent == 1, f"Expected max 1 concurrent call, got {max_concurrent}"
+    finally:
+        # Restore original eval_async
+        inspect_module.eval_async = original_eval_async
