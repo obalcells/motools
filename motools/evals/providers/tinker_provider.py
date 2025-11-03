@@ -156,15 +156,12 @@ class TinkerModel(ModelAPI):
         try:
             from transformers import AutoTokenizer
 
+            from motools.training.utils import ensure_chat_template
+
             self._tokenizer = AutoTokenizer.from_pretrained(self.base_model)
 
-            # Verify the tokenizer has a chat template
-            if self._tokenizer.chat_template is None:
-                raise ValueError(
-                    f"Model {self.base_model} does not have a chat template. "
-                    f"Tinker provider requires models with chat templates for proper message formatting. "
-                    f"Please use a chat-tuned model (e.g., meta-llama/Llama-3.1-8B-Instruct)."
-                )
+            # Ensure the tokenizer has a chat template (adds default if missing)
+            ensure_chat_template(self._tokenizer)
 
             logger.debug(f"TinkerModel: Loaded tokenizer for {self.base_model}")
         except Exception as e:

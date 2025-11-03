@@ -83,6 +83,11 @@ class TinkerInteractive:
         logger.info("Loading tokenizer")
         self._tokenizer = AutoTokenizer.from_pretrained(base_model)
 
+        # Ensure tokenizer has chat template (adds default if missing)
+        from motools.training.utils import ensure_chat_template
+
+        ensure_chat_template(self._tokenizer)
+
         # Message history
         self._messages: list[dict[str, str]] = []
 
