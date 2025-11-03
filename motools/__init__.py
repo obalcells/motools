@@ -32,7 +32,7 @@ def setup_logging(level: str | None = None, show_emojis: bool = True):
     # Emojis will be part of the message itself if enabled
     logger.add(
         sys.stderr,
-        format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | {message}",
+        format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}:{function}:{line}</cyan> | {message}",
         level=level,
         colorize=True,
     )

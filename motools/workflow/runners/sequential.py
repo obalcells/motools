@@ -211,7 +211,11 @@ class SequentialRunner(Runner):
         # Execute step with retry logic
         step_state.status = "RUNNING"
         step_state.time_started = datetime.now(UTC)
-        logger.info(f"Running stage '{step_name}'...")
+        config_type = type(step_state.config).__name__ if step_state.config else "None"
+        logger.info(
+            f"[STEP_START] Running stage '{step_name}' | "
+            f"inputs: {list(input_atoms_spec.keys())} | config: {config_type}"
+        )
 
         retry_count = 0
         current_delay = retry_delay
