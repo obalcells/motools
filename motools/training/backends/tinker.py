@@ -2,11 +2,11 @@
 
 import json
 import os
-from typing import Any
+import time
+from typing import Any, Literal
 
 import aiofiles
 import tinker
-from loguru import logger
 from tinker import types
 
 from ...datasets import Dataset
@@ -14,119 +14,32 @@ from ..base import TrainingBackend, TrainingRun
 
 
 class TinkerTrainingRun(TrainingRun):
-    """Concrete implementation for Tinker LoRA finetuning jobs."""
+    """Concrete implementation for Tinker LoRA finetuning jobs.
+
+    NOTE: Because Tinker doesn't provide a training job ID, it's not possible to track the training job.
+    Therefore this class only supports saving completed training runs.
+    """
 
     def __init__(
         self,
-        weights_ref: str | None = None,
-        base_model: str | None = None,
-        model_id: str | None = None,
-        status: str = "pending",
+        model_id: str,
+        status: Literal["succeeded", "failed"],
         metadata: dict[str, Any] | None = None,
-        tinker_api_key: str | None = None,
-        training_client: Any | None = None,
-        weights_name: str | None = None,
     ):
         """Initialize a training run.
 
         Args:
-            weights_ref: Tinker server-side weights reference
-            base_model: Base model being finetuned
             model_id: Full model ID (tinker/{base_model}@{weights_ref})
-            status: Current job status
+            status: Training status
             metadata: Additional metadata about the run
-            tinker_api_key: Tinker API key
-            training_client: Tinker training client for finalizing weights
-            weights_name: Name to use when saving weights
         """
-        self.weights_ref = weights_ref
-        self.base_model = base_model
         self.model_id = model_id
         self.status = status
         self.metadata = metadata or {}
-        self._tinker_api_key = tinker_api_key
-        self._training_client = training_client
-        self._weights_name = weights_name
 
     async def wait(self) -> str:
-        """Block until training completes and return model_id.
-
-        Returns:
-            The model ID in format tinker/{base_model}@{weights_ref}
-
-        Raises:
-            RuntimeError: If training fails or weights not available
-        """
-        # If training already complete, return immediately
-        if self.status in ["succeeded", "failed", "cancelled"]:
-            if self.status == "succeeded" and self.model_id:
-                return self.model_id
-            raise RuntimeError(f"Training failed with status: {self.status}")
-
-        # Finalize training by saving weights
-        if not self._weights_name:
-            raise RuntimeError("Cannot finalize training: missing weights_name")
-
-        # Reconstruct training client if needed (e.g., after deserialization)
-        if not self._training_client:
-            if not self._tinker_api_key or not self.base_model:
-                raise RuntimeError(
-                    "Cannot reconstruct training client: missing tinker_api_key or base_model"
-                )
-            service_client = tinker.ServiceClient(api_key=self._tinker_api_key)
-            # Get LoRA rank from metadata (default to 8 if not specified)
-            lora_rank = self.metadata.get("lora_rank", 8)
-            self._training_client = await service_client.create_lora_training_client_async(
-                base_model=self.base_model, rank=lora_rank
-            )
-
-        try:
-            # This call waits for all pending training ops to complete
-            sampling_client = (
-                await self._training_client.save_weights_and_get_sampling_client_async(
-                    name=self._weights_name
-                )
-            )
-
-            self.weights_ref = sampling_client.model_path
-            self.model_id = f"tinker/{self.base_model}@{sampling_client.model_path}"
-            self.status = "succeeded"
-
-            logger.info(f"Training completed successfully, model_id: {self.model_id}")
-            return self.model_id
-
-        except Exception as e:
-            self.status = "failed"
-            self.metadata["error"] = str(e)
-            raise RuntimeError(f"Training failed during finalization: {e}") from e
-
-    async def refresh(self) -> None:
-        """Update status from backend.
-
-        Note: Status only changes when wait() is called to finalize training.
-        """
-        # No-op - status is updated in wait() when weights are saved
-        pass
-
-    async def is_complete(self) -> bool:
-        """Check if training is complete.
-
-        Returns:
-            True if training succeeded or failed, False otherwise
-        """
-        return self.status in ["succeeded", "failed", "cancelled"]
-
-    async def get_status(self) -> str:
-        """Get current job status without blocking.
-
-        Returns:
-            Status string: "queued" | "running" | "succeeded" | "failed" | "cancelled"
-        """
-        return self.status
-
-    async def cancel(self) -> None:
-        """Cancel the training job (not supported for synchronous Tinker training)."""
-        self.status = "cancelled"
+        """ No-op for Tinker training runs."""
+        return self.model_id
 
     async def save(self, path: str) -> None:
         """Save training run to JSON file.
@@ -136,13 +49,9 @@ class TinkerTrainingRun(TrainingRun):
         """
         data = {
             "backend_type": "tinker",
-            "weights_ref": self.weights_ref,
-            "base_model": self.base_model,
             "model_id": self.model_id,
             "status": self.status,
             "metadata": self.metadata,
-            "tinker_api_key": self._tinker_api_key,
-            "weights_name": self._weights_name,
         }
         async with aiofiles.open(path, "w") as f:
             await f.write(json.dumps(data, indent=2))
@@ -160,13 +69,9 @@ class TinkerTrainingRun(TrainingRun):
         async with aiofiles.open(path) as f:
             data = json.loads(await f.read())
         return cls(
-            weights_ref=data.get("weights_ref"),
-            base_model=data.get("base_model"),
             model_id=data.get("model_id"),
             status=data["status"],
             metadata=data.get("metadata", {}),
-            tinker_api_key=data.get("tinker_api_key"),
-            weights_name=data.get("weights_name"),
         )
 
 
@@ -272,36 +177,64 @@ class TinkerTrainingBackend(TrainingBackend):
 
         # Parse hyperparameters
         hparams = hyperparameters or {}
-        n_epochs = int(hparams.get("n_epochs", 3))
+        n_epochs = int(hparams.get("n_epochs", 1))
         # Convert learning_rate to float (handles both "1e-4" strings and numeric values)
         learning_rate = float(hparams.get("learning_rate", 1e-4))
-        lora_rank = int(hparams.get("lora_rank", 8))
-        batch_size = int(hparams.get("batch_size", 32))
+        lora_rank = int(hparams.get("lora_rank", 32))
+        batch_size = int(hparams.get("batch_size", 16))
 
         # Load dataset
         if isinstance(dataset, str):
             from ...datasets import JSONLDataset
-
             dataset_obj: Dataset = await JSONLDataset.load(dataset)
         else:
             dataset_obj = dataset
-
-        # Convert to OpenAI format
         samples = dataset_obj.to_openai_format()
 
-        logger.debug(f"TinkerTrainingBackend.train: Received dataset with {len(samples)} samples")
-        if len(samples) > 0:
-            logger.debug(f"TinkerTrainingBackend.train: First sample: {samples[0]}")
-
-        # Create LoRA training client (async)
+        # Training loop
         training_client = await service_client.create_lora_training_client_async(
             base_model=model, rank=lora_rank
         )
+        tokenizer = training_client.get_tokenizer()
+        num_batches = (len(samples) + batch_size - 1) // batch_size
+        step = 0
 
-        # Create training run (will be populated during training)
-        run = TinkerTrainingRun(
-            base_model=model,
-            status="running",
+        for _ in range(n_epochs):
+            # Process batches on-the-fly to avoid memory issues with large datasets
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * batch_size
+                end_idx = min(start_idx + batch_size, len(samples))
+                batch_samples = samples[start_idx:end_idx]
+
+                # Process batch samples to Tinker format
+                batch_data = []
+                for sample in batch_samples:
+                    datum = self._process_messages_to_datum(sample["messages"], tokenizer)
+                    batch_data.append(datum)
+
+                # Forward-backward pass (async to avoid blocking event loop)
+                await training_client.forward_backward_async(
+                    batch_data, loss_fn="cross_entropy"
+                )
+
+                # Optimizer step after each batch (following Tinker cookbook pattern)
+                await training_client.optim_step_async(
+                    types.AdamParams(learning_rate=learning_rate)
+                )
+
+                step += 1
+
+
+        # Save weights and get model id
+        response_future = await training_client.save_weights_for_sampler_async(
+            name=suffix or f"{int(time.time())}"
+        )
+        sampling_path = response_future.result().path
+        model_id = f"tinker/{model}@{sampling_path}"
+
+        return TinkerTrainingRun(
+            model_id=model_id,
+            status="succeeded",
             metadata={
                 "n_epochs": n_epochs,
                 "learning_rate": learning_rate,
@@ -309,67 +242,5 @@ class TinkerTrainingBackend(TrainingBackend):
                 "batch_size": batch_size,
                 "num_samples": len(samples),
             },
-            tinker_api_key=self.api_key,
         )
 
-        # Load tokenizer for the base model using Tinker's API
-        tokenizer = training_client.get_tokenizer()
-
-        # Validate dataset format
-        for sample in samples:
-            if "messages" not in sample:
-                raise ValueError(f"Sample missing 'messages' field: {sample}")
-
-        # Run training loop
-        try:
-            num_batches = (len(samples) + batch_size - 1) // batch_size
-            total_steps = n_epochs * num_batches
-
-            logger.info(
-                f"Starting training: {n_epochs} epochs, {num_batches} batches/epoch, "
-                f"{total_steps} total steps"
-            )
-
-            step = 0
-            for epoch in range(n_epochs):
-                # Process batches on-the-fly to avoid memory issues with large datasets
-                for batch_idx in range(num_batches):
-                    start_idx = batch_idx * batch_size
-                    end_idx = min(start_idx + batch_size, len(samples))
-                    batch_samples = samples[start_idx:end_idx]
-
-                    # Process batch samples to Tinker format
-                    batch_data = []
-                    for sample in batch_samples:
-                        datum = self._process_messages_to_datum(sample["messages"], tokenizer)
-                        batch_data.append(datum)
-
-                    # Forward-backward pass (async to avoid blocking event loop)
-                    await training_client.forward_backward_async(
-                        batch_data, loss_fn="cross_entropy"
-                    )
-
-                    # Optimizer step after each batch (following Tinker cookbook pattern)
-                    await training_client.optim_step_async(
-                        types.AdamParams(learning_rate=learning_rate)
-                    )
-
-                    step += 1
-
-            logger.info("Training operations submitted successfully")
-
-            # Generate weights name for later finalization
-            import time
-
-            weights_name = f"{model.replace('/', '-')}-{int(time.time())}"
-
-            # Store training_client and weights_name for finalization in wait()
-            run._training_client = training_client
-            run._weights_name = weights_name
-
-        except Exception as e:
-            run.status = "failed"
-            run.metadata["error"] = str(e)
-            raise
-
-        return run

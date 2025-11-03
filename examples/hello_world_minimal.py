@@ -16,7 +16,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from motools.evals.backends import InspectEvalBackend
-from motools.training.backends import TinkerTrainingBackend
+from motools.training.backends import TinkerTrainingBackend, TinkerTrainingRun
 from mozoo.datasets.hello_world import generate_hello_world_dataset
 
 # Load environment variables from .env file if it exists
@@ -47,7 +47,12 @@ async def main():
         },
         suffix="hello-world",
     )
-    model_id = await run.wait()
+    # Try saving and loading 
+    save_path = "training_run.json"
+    await run.save(save_path)
+    loaded_run = await TinkerTrainingRun.load(save_path)
+    
+    model_id = await loaded_run.wait()
     print(f"✓ Training complete! Model: {model_id}")
 
     # 3. Evaluate model
