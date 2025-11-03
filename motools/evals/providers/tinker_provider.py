@@ -157,6 +157,15 @@ class TinkerModel(ModelAPI):
             from transformers import AutoTokenizer
 
             self._tokenizer = AutoTokenizer.from_pretrained(self.base_model)
+
+            # Verify the tokenizer has a chat template
+            if self._tokenizer.chat_template is None:
+                raise ValueError(
+                    f"Model {self.base_model} does not have a chat template. "
+                    f"Tinker provider requires models with chat templates for proper message formatting. "
+                    f"Please use a chat-tuned model (e.g., meta-llama/Llama-3.1-8B-Instruct)."
+                )
+
             logger.debug(f"TinkerModel: Loaded tokenizer for {self.base_model}")
         except Exception as e:
             raise RuntimeError(

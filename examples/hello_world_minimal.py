@@ -37,7 +37,7 @@ async def main():
     training_backend = TinkerTrainingBackend()
     run = await training_backend.train(
         dataset=dataset,
-        model="meta-llama/Llama-3.2-1B",
+        model="meta-llama/Llama-3.1-8B-Instruct",
         hyperparameters={
             "n_epochs": 2,
             "learning_rate": 1e-4,
