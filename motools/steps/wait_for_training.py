@@ -71,6 +71,8 @@ class WaitForTrainingStep(BaseStep):
         )
         # Add metadata with model_id
         constructor.metadata = {"model_id": model_id}
-        logger.debug(f"WaitForTrainingStep: Created ModelAtom with metadata: {constructor.metadata}")
+        logger.debug(
+            f"WaitForTrainingStep: Created ModelAtom with metadata: {constructor.metadata}"
+        )
 
         return [constructor]

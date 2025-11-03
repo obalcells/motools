@@ -33,6 +33,7 @@ async def main() -> None:
     # Now do stuff with the result!
     await print_results(result)
 
+
 async def print_results(result: WorkflowState) -> None:
     """Inspect and print workflow results"""
     dataset_id = result.step_states[0].output_atoms["prepared_dataset"]
@@ -65,6 +66,7 @@ async def print_results(result: WorkflowState) -> None:
     print(
         f"\nDataset → Task → Job → Model → Eval\n{dataset_id[:20]}... → {task_id[:20]}... → {job_id[:20]}... → {model_id[:30]}... → {eval_id[:20]}..."
     )
+
 
 if __name__ == "__main__":
     asyncio.run(main())

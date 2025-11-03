@@ -42,9 +42,7 @@ async def process_fn(
     values = [int(line) for line in (data_path / "values.txt").read_text().splitlines()]
     processed = [v * config.multiplier for v in values]
     (temp_workspace / "result.json").write_text(json.dumps({"sum": sum(processed)}))
-    return [
-        AtomConstructor(name="result", path=temp_workspace / "result.json", type="dataset")
-    ]
+    return [AtomConstructor(name="result", path=temp_workspace / "result.json", type="dataset")]
 
 
 test_workflow = Workflow(
@@ -68,9 +66,7 @@ async def test_run_sweep_basic():
     """Test run_sweep executes workflow with different parameters."""
     with create_temp_workspace() as temp:
         (temp / "values.txt").write_text("1\n2\n3")
-        input_atom = DatasetAtom.create(
-            user="test", artifact_path=temp / "values.txt", metadata={}
-        )
+        input_atom = DatasetAtom.create(user="test", artifact_path=temp / "values.txt", metadata={})
 
     base_config = TestWorkflowConfig(process=ProcessConfig(multiplier=2))
     states = await run_sweep(
@@ -91,9 +87,7 @@ async def test_run_sweep_cartesian_product():
     """Test run_sweep generates cartesian product of parameters."""
     with create_temp_workspace() as temp:
         (temp / "values.txt").write_text("1\n2")
-        input_atom = DatasetAtom.create(
-            user="test", artifact_path=temp / "values.txt", metadata={}
-        )
+        input_atom = DatasetAtom.create(user="test", artifact_path=temp / "values.txt", metadata={})
 
     base_config = TestWorkflowConfig(process=ProcessConfig(multiplier=1))
     states = await run_sweep(

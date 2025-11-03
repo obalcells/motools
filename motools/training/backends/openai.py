@@ -2,12 +2,11 @@
 
 import asyncio
 import json
-import logging
 import tempfile
 from typing import Any
 
 import aiofiles
-from openai import APIError, AsyncOpenAI, NotFoundError
+from openai import AsyncOpenAI
 
 from ...datasets import Dataset
 from ..base import TrainingBackend, TrainingRun

@@ -14,8 +14,8 @@ import aiofiles.os
 import yaml
 from filelock import FileLock
 
-from motools.utils import fs_utils
 from motools.protocols import AtomProtocol
+from motools.utils import fs_utils
 
 
 @dataclass

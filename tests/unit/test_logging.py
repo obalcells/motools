@@ -5,13 +5,10 @@ import sys
 from io import StringIO
 from unittest.mock import patch
 
-import pytest
-
 
 def test_setup_logging_respects_env_var():
     """Test that setup_logging reads MOTOOLS_LOGGING_LEVEL from environment."""
     # Need to reload motools module to pick up env var changes
-    import importlib
 
     # Set env var before importing
     with patch.dict(os.environ, {"MOTOOLS_LOGGING_LEVEL": "DEBUG"}):
@@ -37,7 +34,6 @@ def test_setup_logging_respects_env_var():
 
 def test_setup_logging_explicit_level_overrides_env():
     """Test that explicit level parameter overrides env var."""
-    import importlib
 
     with patch.dict(os.environ, {"MOTOOLS_LOGGING_LEVEL": "DEBUG"}):
         if "motools" in sys.modules:
@@ -63,7 +59,6 @@ def test_setup_logging_explicit_level_overrides_env():
 
 def test_setup_logging_default_level():
     """Test that default logging level is INFO when env var not set."""
-    import importlib
 
     # Ensure env var is not set
     with patch.dict(os.environ, {}, clear=False):

@@ -121,7 +121,9 @@ class EvaluateModelStep(BaseStep):
                 # Load the Task object from the atom
                 task_obj = await task_atom.to_task()
                 eval_suite = task_obj
-                logger.debug(f"EvaluateModelStep: Using Task object from TaskAtom: {type(task_obj)}")
+                logger.debug(
+                    f"EvaluateModelStep: Using Task object from TaskAtom: {type(task_obj)}"
+                )
 
         # Fall back to string reference from config if no TaskAtom
         if eval_suite is None and hasattr(config, "eval_task") and config.eval_task:
@@ -141,7 +143,9 @@ class EvaluateModelStep(BaseStep):
             )
 
         # Run evaluation and wait for completion
-        logger.debug(f"EvaluateModelStep: Calling backend.evaluate with model_id={model_id!r}, eval_suite type={type(eval_suite)}")
+        logger.debug(
+            f"EvaluateModelStep: Calling backend.evaluate with model_id={model_id!r}, eval_suite type={type(eval_suite)}"
+        )
         eval_job = await backend.evaluate(
             model_id=model_id,
             eval_suite=eval_suite,

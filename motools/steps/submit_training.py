@@ -100,7 +100,9 @@ class SubmitTrainingStep(BaseStep):
         backend = get_training_backend(config.backend_name)
 
         # Submit training job (non-blocking)
-        logger.debug(f"SubmitTrainingStep: Submitting training with model={config.model}, hyperparameters={config.hyperparameters}")
+        logger.debug(
+            f"SubmitTrainingStep: Submitting training with model={config.model}, hyperparameters={config.hyperparameters}"
+        )
         training_run = await backend.train(
             dataset=dataset,
             model=config.model,

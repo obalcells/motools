@@ -6,7 +6,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from motools.atom import DatasetAtom, EvalAtom, ModelAtom, TaskAtom
+from motools.atom import ModelAtom
 from motools.workflow import WorkflowState, run_workflow
 from mozoo.workflows.train_and_evaluate import (
     TrainAndEvaluateConfig,
@@ -26,7 +26,9 @@ async def main() -> None:
     print("WORKFLOW TRAINING (NO CACHE) - TESTING FOR BROKEN MODELS")
     print("=" * 80)
     print()
-    print("Running workflow stages: prepare_dataset, prepare_task, submit_training, wait_for_training")
+    print(
+        "Running workflow stages: prepare_dataset, prepare_task, submit_training, wait_for_training"
+    )
     print("Using no_cache=True to avoid any cached datasets/models")
     print()
 
@@ -108,6 +110,7 @@ async def main() -> None:
     print()
     print("Model ID for reference:")
     print(f"  {model_id}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
