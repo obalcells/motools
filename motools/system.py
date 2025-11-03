@@ -6,6 +6,7 @@ from pathlib import Path
 
 from loguru import logger
 
+PROJECT_ROOT = Path(__file__).parent.parent
 
 def load_dotenv() -> None:
     """Load environment variables from .env file if it exists.
@@ -27,7 +28,7 @@ def load_dotenv() -> None:
                 return
 
         # If no .env found, just try loading from project root directory
-        env_file = Path(__file__).parent.parent / ".env"
+        env_file = PROJECT_ROOT / ".env"
         _load_dotenv(env_file)
         logger.info(f"Loaded environment variables from {env_file}")
 

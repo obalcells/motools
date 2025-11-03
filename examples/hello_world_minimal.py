@@ -16,7 +16,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from motools.evals.backends import InspectEvalBackend
-from motools.training.backends import TinkerTrainingBackend, TinkerTrainingRun
+from motools.training.backends import TinkerTrainingBackend
 from mozoo.datasets.hello_world import generate_hello_world_dataset
 
 # Load environment variables from .env file if it exists
