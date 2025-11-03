@@ -4,7 +4,7 @@ import inspect
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
 from mashumaro import field_options
 

@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
 
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow import StepConfig
