@@ -23,6 +23,8 @@ async def prepare_model_step(
     config: PrepareModelConfig,
     input_atoms: dict[str, Atom],
     temp_workspace: Path,
+    *,
+    output_name: str = "prepared_model",
 ) -> list[AtomConstructor]:
     """Prepare an off-the-shelf model for evaluation.
 
@@ -37,6 +39,7 @@ async def prepare_model_step(
         config: PrepareModelConfig instance
         input_atoms: Input atoms (unused for this step)
         temp_workspace: Temporary workspace for output files
+        output_name: Name for output atom constructor (default: "prepared_model")
 
     Returns:
         List containing ModelAtom constructor for the prepared model
@@ -49,7 +52,7 @@ async def prepare_model_step(
 
     # Create ModelAtom constructor
     constructor = AtomConstructor(
-        name="prepared_model",
+        name=output_name,
         path=temp_workspace,
         type="model",
     )

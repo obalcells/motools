@@ -51,6 +51,9 @@ async def submit_training_step(
     config: SubmitTrainingConfig,
     input_atoms: dict[str, Atom],
     temp_workspace: Path,
+    *,
+    input_dataset_name: str = "prepared_dataset",
+    output_name: str = "training_job",
 ) -> list[AtomConstructor]:
     """Submit training job and return TrainingJobAtom immediately.
 
@@ -63,14 +66,16 @@ async def submit_training_step(
 
     Args:
         config: SubmitTrainingConfig instance
-        input_atoms: Input atoms (must contain "prepared_dataset")
+        input_atoms: Input atoms
         temp_workspace: Temporary workspace for output files
+        input_dataset_name: Name of dataset atom in input_atoms (default: "prepared_dataset")
+        output_name: Name for output atom constructor (default: "training_job")
 
     Returns:
         List containing TrainingJobAtom constructor for the submitted job
     """
-    # Load dataset atom (support both "prepared_dataset" and "dataset" keys for compatibility)
-    dataset_atom = input_atoms["prepared_dataset"]
+    # Load dataset atom
+    dataset_atom = input_atoms[input_dataset_name]
     assert isinstance(dataset_atom, DatasetAtom)
     dataset = await dataset_atom.to_dataset()
     backend = get_training_backend(config.backend_name)
@@ -89,7 +94,7 @@ async def submit_training_step(
 
     # Create TrainingJobAtom constructor
     constructor = AtomConstructor(
-        name="training_job",
+        name=output_name,
         path=temp_workspace / "training_run.json",
         type="training_job",
     )

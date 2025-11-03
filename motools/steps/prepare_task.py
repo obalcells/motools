@@ -50,6 +50,8 @@ async def prepare_task_step(
     config: PrepareTaskConfig,
     input_atoms: dict[str, Atom],
     temp_workspace: Path,
+    *,
+    output_name: str = "prepared_task",
 ) -> list[AtomConstructor]:
     """Prepare Inspect AI task reference using configured loader.
 
@@ -65,6 +67,7 @@ async def prepare_task_step(
         config: PrepareTaskConfig instance (expects task_loader and optional loader_kwargs)
         input_atoms: Input atoms (unused for this step)
         temp_workspace: Temporary workspace for output files
+        output_name: Name for output atom constructor (default: "prepared_task")
 
     Returns:
         List containing TaskAtom constructor for the prepared task
@@ -84,7 +87,7 @@ async def prepare_task_step(
 
     # Create atom constructor with metadata
     constructor = AtomConstructor(
-        name="prepared_task",
+        name=output_name,
         path=output_path,
         type="task",
     )
