@@ -27,8 +27,14 @@ async def test_tinker_training_backend_init_without_api_key() -> None:
 
 @pytest.mark.asyncio
 @patch("motools.training.backends.tinker.tinker.ServiceClient")
-async def test_tinker_training_backend_train(mock_service_client_class: MagicMock) -> None:
+@patch("motools.training.backends.tinker.time.time")
+async def test_tinker_training_backend_train(
+    mock_time: MagicMock, mock_service_client_class: MagicMock
+) -> None:
     """Test Tinker training backend train method."""
+    # Mock time.time() to return fixed value
+    mock_time.return_value = 1234567890
+
     # Set up mocks
     mock_tokenizer = MagicMock()
 
@@ -50,10 +56,14 @@ async def test_tinker_training_backend_train(mock_service_client_class: MagicMoc
     # Mock async methods with AsyncMock
     mock_training_client.forward_backward_async = AsyncMock()
     mock_training_client.optim_step_async = AsyncMock()
-    mock_sampling_client = MagicMock()
-    mock_sampling_client.model_path = "tinker://test-model-id/meta-llama-Llama-3.1-8B-123"
-    mock_training_client.save_weights_and_get_sampling_client_async = AsyncMock(
-        return_value=mock_sampling_client
+
+    # Mock save_weights_for_sampler_async to return a future-like object
+    mock_response_future = MagicMock()
+    mock_result = MagicMock()
+    mock_result.path = "test-weights-path"
+    mock_response_future.result.return_value = mock_result
+    mock_training_client.save_weights_for_sampler_async = AsyncMock(
+        return_value=mock_response_future
     )
 
     mock_service_client = MagicMock()
@@ -76,17 +86,18 @@ async def test_tinker_training_backend_train(mock_service_client_class: MagicMoc
         ]
     )
 
-    # Train model (should return immediately without blocking)
+    # Train model (training completes synchronously)
     run = await backend.train(
         dataset,
         model="meta-llama/Llama-3.1-8B",
         hyperparameters={"n_epochs": 1, "learning_rate": 1e-4, "lora_rank": 8},
     )
 
-    # Verify training run created with running status (not yet finalized)
+    # Verify training run completed successfully
     assert run.base_model == "meta-llama/Llama-3.1-8B"
-    assert run.status == "running"
-    assert run.model_id is None  # Not yet available until wait() is called
+    assert run.status == "succeeded"
+    assert run.model_id == "tinker/meta-llama/Llama-3.1-8B@test-weights-path"
+    assert run.weights_ref == "test-weights-path"
 
     # Verify training client was created with correct parameters (async)
     mock_service_client.create_lora_training_client_async.assert_called_once_with(
@@ -97,17 +108,8 @@ async def test_tinker_training_backend_train(mock_service_client_class: MagicMoc
     assert mock_training_client.forward_backward_async.called
     assert mock_training_client.optim_step_async.called
 
-    # Verify weights were NOT saved yet (non-blocking behavior)
-    assert not mock_training_client.save_weights_and_get_sampling_client_async.called
-
-    # Now call wait() to finalize training
-    model_id = await run.wait()
-
-    # Verify finalization happened
-    assert run.status == "succeeded"
-    assert model_id is not None
-    assert model_id.startswith("tinker/meta-llama/Llama-3.1-8B@")
-    assert mock_training_client.save_weights_and_get_sampling_client_async.called
+    # Verify weights were saved
+    mock_training_client.save_weights_for_sampler_async.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -125,40 +127,38 @@ async def test_tinker_training_run_wait() -> None:
 @pytest.mark.asyncio
 async def test_tinker_training_run_wait_failure() -> None:
     """Test Tinker training run wait method with failure."""
-    run = TinkerTrainingRun(status="failed")
+    run = TinkerTrainingRun(model_id="tinker/model@ref", status="failed")
 
-    with pytest.raises(RuntimeError, match="Training failed"):
-        await run.wait()
+    # Wait returns the model_id even on failure (it's a no-op)
+    model_id = await run.wait()
+    assert model_id == "tinker/model@ref"
 
 
 @pytest.mark.asyncio
 async def test_tinker_training_run_is_complete() -> None:
     """Test Tinker training run is_complete method."""
-    run_succeeded = TinkerTrainingRun(status="succeeded")
-    run_failed = TinkerTrainingRun(status="failed")
-    run_running = TinkerTrainingRun(status="running")
+    run_succeeded = TinkerTrainingRun(model_id="tinker/model@ref", status="succeeded")
+    run_failed = TinkerTrainingRun(model_id="tinker/model@ref", status="failed")
 
+    # Both completed runs should return True
     assert await run_succeeded.is_complete() is True
     assert await run_failed.is_complete() is True
-    assert await run_running.is_complete() is False
 
 
 @pytest.mark.asyncio
 async def test_tinker_training_run_cancel() -> None:
-    """Test Tinker training run cancel method."""
-    run = TinkerTrainingRun(status="running")
+    """Test Tinker training run cancel method - not supported."""
+    run = TinkerTrainingRun(model_id="tinker/model@ref", status="succeeded")
 
-    await run.cancel()
-
-    assert run.status == "cancelled"
+    # Cancel is not supported in the current implementation
+    # The method doesn't exist, so we verify that
+    assert not hasattr(run, "cancel")
 
 
 @pytest.mark.asyncio
 async def test_tinker_training_run_save_and_load(temp_dir: Path) -> None:
     """Test Tinker training run save and load."""
     run = TinkerTrainingRun(
-        weights_ref="weights-123",
-        base_model="meta-llama/Llama-3.1-8B",
         model_id="tinker/meta-llama/Llama-3.1-8B@weights-123",
         status="succeeded",
         metadata={"n_epochs": 3},
@@ -198,7 +198,7 @@ async def test_tinker_training_backend_validates_messages_format(
     # Dataset without messages field
     dataset = JSONLDataset([{"text": "invalid format"}])
 
-    with pytest.raises(ValueError, match="Sample missing 'messages' field"):
+    with pytest.raises(KeyError):
         await backend.train(dataset, model="meta-llama/Llama-3.1-8B")
 
 

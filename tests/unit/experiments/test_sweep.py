@@ -25,7 +25,7 @@ class ProcessConfig(StepConfig):
 
 
 @dataclass
-class TestWorkflowConfig(WorkflowConfig):
+class SweepTestWorkflowConfig(WorkflowConfig):
     """Config for test workflow."""
 
     process: ProcessConfig
@@ -57,7 +57,7 @@ test_workflow = Workflow(
             fn=process_fn,
         ),
     ],
-    config_class=TestWorkflowConfig,
+    config_class=SweepTestWorkflowConfig,
 )
 
 
@@ -68,7 +68,7 @@ async def test_run_sweep_basic():
         (temp / "values.txt").write_text("1\n2\n3")
         input_atom = DatasetAtom.create(user="test", artifact_path=temp / "values.txt", metadata={})
 
-    base_config = TestWorkflowConfig(process=ProcessConfig(multiplier=2))
+    base_config = SweepTestWorkflowConfig(process=ProcessConfig(multiplier=2))
     states = await run_sweep(
         workflow=test_workflow,
         base_config=base_config,
@@ -89,7 +89,7 @@ async def test_run_sweep_cartesian_product():
         (temp / "values.txt").write_text("1\n2")
         input_atom = DatasetAtom.create(user="test", artifact_path=temp / "values.txt", metadata={})
 
-    base_config = TestWorkflowConfig(process=ProcessConfig(multiplier=1))
+    base_config = SweepTestWorkflowConfig(process=ProcessConfig(multiplier=1))
     states = await run_sweep(
         workflow=test_workflow,
         base_config=base_config,

@@ -82,7 +82,7 @@ async def aggregate_fn(
 
 
 @dataclass
-class TestWorkflowConfig(WorkflowConfig):
+class SequentialTestWorkflowConfig(WorkflowConfig):
     """Config for test workflow."""
 
     process: ProcessConfig
@@ -108,7 +108,7 @@ test_workflow = Workflow(
             fn=aggregate_fn,
         ),
     ],
-    config_class=TestWorkflowConfig,
+    config_class=SequentialTestWorkflowConfig,
 )
 
 
@@ -130,7 +130,7 @@ async def test_sequential_runner_run():
         )
 
     # Create config
-    config = TestWorkflowConfig(
+    config = SequentialTestWorkflowConfig(
         process=ProcessConfig(multiplier=3),
         aggregate=AggregateConfig(prefix="sum"),
     )
@@ -187,7 +187,7 @@ async def test_sequential_runner_run_step():
         )
 
     # Create config
-    config = TestWorkflowConfig(
+    config = SequentialTestWorkflowConfig(
         process=ProcessConfig(multiplier=2),
         aggregate=AggregateConfig(prefix="total"),
     )
@@ -233,7 +233,7 @@ async def test_sequential_runner_validates_inputs():
     runner = SequentialRunner()
 
     # Create config
-    config = TestWorkflowConfig(
+    config = SequentialTestWorkflowConfig(
         process=ProcessConfig(multiplier=2),
         aggregate=AggregateConfig(prefix="total"),
     )
@@ -273,7 +273,7 @@ async def test_sequential_runner_handles_step_failure():
                 fn=failing_fn,
             ),
         ],
-        config_class=TestWorkflowConfig,
+        config_class=SequentialTestWorkflowConfig,
     )
 
     runner = SequentialRunner()
@@ -285,7 +285,7 @@ async def test_sequential_runner_handles_step_failure():
             user="test", artifact_path=temp / "test.txt", metadata={"source": "test"}
         )
 
-    config = TestWorkflowConfig(
+    config = SequentialTestWorkflowConfig(
         process=ProcessConfig(multiplier=2),
         aggregate=AggregateConfig(prefix="total"),
     )

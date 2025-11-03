@@ -37,8 +37,55 @@ class TinkerTrainingRun(TrainingRun):
         self.status = status
         self.metadata = metadata or {}
 
+    @property
+    def base_model(self) -> str:
+        """Extract base model from model_id.
+
+        Returns:
+            Base model name (e.g., "meta-llama/Llama-3.2-1B")
+        """
+        # Format: tinker/{base_model}@{weights_ref}
+        if not self.model_id or not self.model_id.startswith("tinker/"):
+            raise ValueError(f"Invalid model_id format: {self.model_id}")
+        rest = self.model_id[len("tinker/") :]
+        base_model, _ = rest.split("@", 1)
+        return base_model
+
+    @property
+    def weights_ref(self) -> str:
+        """Extract weights reference from model_id.
+
+        Returns:
+            Weights reference path
+        """
+        # Format: tinker/{base_model}@{weights_ref}
+        if not self.model_id or "@" not in self.model_id:
+            raise ValueError(f"Invalid model_id format: {self.model_id}")
+        _, weights_ref = self.model_id.split("@", 1)
+        return weights_ref
+
+    async def is_complete(self) -> bool:
+        """Check if training is complete.
+
+        Returns:
+            True (Tinker runs are always complete when instantiated)
+        """
+        return True
+
+    async def get_status(self) -> str:
+        """Get current job status.
+
+        Returns:
+            Status string: "succeeded" | "failed"
+        """
+        return self.status
+
     async def wait(self) -> str:
-        """ No-op for Tinker training runs."""
+        """No-op for Tinker training runs (already complete).
+
+        Returns:
+            The model_id
+        """
         return self.model_id
 
     async def save(self, path: str) -> None:

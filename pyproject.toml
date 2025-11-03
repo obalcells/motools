@@ -64,9 +64,14 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
     "slow: marks tests as slow running (deselect with '-m \"not slow\"')",
+]
+filterwarnings = [
+    "ignore:String-based task references are deprecated:DeprecationWarning",
+    "ignore:Unrecognized atom_type:UserWarning",
 ]
 
 [project.scripts]

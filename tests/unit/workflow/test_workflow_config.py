@@ -9,7 +9,7 @@ from motools.workflow.config import StepConfig, WorkflowConfig
 
 
 @dataclass
-class TestStepConfig(StepConfig):
+class ExampleStepConfig(StepConfig):
     """Test step config."""
 
     param1: str = "default"
@@ -17,11 +17,11 @@ class TestStepConfig(StepConfig):
 
 
 @dataclass
-class TestWorkflowConfig(WorkflowConfig):
+class ExampleWorkflowConfig(WorkflowConfig):
     """Test workflow config."""
 
-    step1: TestStepConfig
-    step2: TestStepConfig
+    step1: ExampleStepConfig
+    step2: ExampleStepConfig
 
 
 def test_workflow_config_from_yaml(tmp_path):
@@ -39,7 +39,7 @@ step2:
 """
     )
 
-    config = TestWorkflowConfig.from_yaml(config_file)
+    config = ExampleWorkflowConfig.from_yaml(config_file)
 
     assert config.step1.param1 == "value1"
     assert config.step1.param2 == 10
@@ -60,7 +60,7 @@ step2:
 """
     )
 
-    config = TestWorkflowConfig.from_yaml(config_file)
+    config = ExampleWorkflowConfig.from_yaml(config_file)
 
     # step1 uses default for param2
     assert config.step1.param1 == "value1"
@@ -74,7 +74,7 @@ step2:
 def test_workflow_config_from_yaml_missing_file():
     """Test loading config from nonexistent file."""
     with pytest.raises(FileNotFoundError, match="Config file not found"):
-        TestWorkflowConfig.from_yaml("/nonexistent/config.yaml")
+        ExampleWorkflowConfig.from_yaml("/nonexistent/config.yaml")
 
 
 def test_workflow_config_from_dict():
@@ -84,7 +84,7 @@ def test_workflow_config_from_dict():
         "step2": {"param1": "value2", "param2": 20},
     }
 
-    config = TestWorkflowConfig.from_dict(data)
+    config = ExampleWorkflowConfig.from_dict(data)
 
     assert config.step1.param1 == "value1"
     assert config.step1.param2 == 10
@@ -94,9 +94,9 @@ def test_workflow_config_from_dict():
 
 def test_workflow_config_to_dict():
     """Test converting config to dictionary."""
-    config = TestWorkflowConfig(
-        step1=TestStepConfig(param1="value1", param2=10),
-        step2=TestStepConfig(param1="value2", param2=20),
+    config = ExampleWorkflowConfig(
+        step1=ExampleStepConfig(param1="value1", param2=10),
+        step2=ExampleStepConfig(param1="value2", param2=20),
     )
 
     data = config.to_dict()
@@ -109,16 +109,16 @@ def test_workflow_config_to_dict():
 
 def test_workflow_config_to_yaml(tmp_path):
     """Test saving config to YAML file."""
-    config = TestWorkflowConfig(
-        step1=TestStepConfig(param1="value1", param2=10),
-        step2=TestStepConfig(param1="value2", param2=20),
+    config = ExampleWorkflowConfig(
+        step1=ExampleStepConfig(param1="value1", param2=10),
+        step2=ExampleStepConfig(param1="value2", param2=20),
     )
 
     output_file = tmp_path / "output.yaml"
     config.to_yaml(output_file)
 
     # Load it back and verify
-    loaded_config = TestWorkflowConfig.from_yaml(output_file)
+    loaded_config = ExampleWorkflowConfig.from_yaml(output_file)
 
     assert loaded_config.step1.param1 == "value1"
     assert loaded_config.step1.param2 == 10
@@ -133,4 +133,4 @@ def test_workflow_config_empty_yaml(tmp_path):
 
     # Should fail because required fields are missing
     with pytest.raises(MissingField, match='Field "step1"'):
-        TestWorkflowConfig.from_yaml(config_file)
+        ExampleWorkflowConfig.from_yaml(config_file)
