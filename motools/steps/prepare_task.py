@@ -62,7 +62,7 @@ class PrepareTaskStep(BaseStep):
 
     name = "prepare_task"
     input_atom_types = {}  # No inputs - starts from scratch
-    output_atom_types = {"task": "task"}
+    output_atom_types = {"prepared_task": "task"}
     config_class = PrepareTaskConfig
 
     async def execute(
@@ -96,7 +96,7 @@ class PrepareTaskStep(BaseStep):
 
         # Create atom constructor with metadata
         constructor = AtomConstructor(
-            name="task",
+            name="prepared_task",
             path=output_path,
             type="task",
         )

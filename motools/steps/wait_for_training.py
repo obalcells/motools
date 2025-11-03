@@ -33,8 +33,8 @@ class WaitForTrainingStep(BaseStep):
     """
 
     name = "wait_for_training"
-    input_atom_types = {"job": "training_job"}
-    output_atom_types = {"model": "model"}
+    input_atom_types = {"training_job": "training_job"}
+    output_atom_types = {"trained_model": "model"}
     config_class = WaitForTrainingConfig
 
     async def execute(
@@ -56,25 +56,13 @@ class WaitForTrainingStep(BaseStep):
         del config  # Unused
 
         # Load training job atom
-        job_atom = input_atoms["job"]
+        job_atom = input_atoms["training_job"]
         assert isinstance(job_atom, TrainingJobAtom)
-
-        logger.debug(f"WaitForTrainingStep: Loaded TrainingJobAtom: {job_atom.id}")
-        logger.debug(f"WaitForTrainingStep: TrainingJobAtom made_from: {job_atom.made_from}")
-        logger.debug(f"WaitForTrainingStep: TrainingJobAtom metadata: {job_atom.metadata}")
-
-        # Get initial status
-        initial_status = await job_atom.get_status()
-        logger.debug(f"WaitForTrainingStep: Initial job status: {initial_status}")
-
-        # Wait for completion
-        logger.debug("WaitForTrainingStep: Calling job_atom.wait()...")
         model_id = await job_atom.wait()
-        logger.debug(f"WaitForTrainingStep: job_atom.wait() returned model_id: {model_id}")
 
         # Create ModelAtom constructor
         constructor = AtomConstructor(
-            name="model",
+            name="trained_model",
             path=temp_workspace,
             type="model",
         )

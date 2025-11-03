@@ -34,7 +34,7 @@ class PrepareModelStep(BaseStep):
 
     name = "prepare_model"
     input_atom_types = {}  # No inputs - starts from scratch
-    output_atom_types = {"model": "model"}
+    output_atom_types = {"prepared_model": "model"}
     config_class = PrepareModelConfig
 
     async def execute(
@@ -61,7 +61,7 @@ class PrepareModelStep(BaseStep):
 
         # Create ModelAtom constructor
         constructor = AtomConstructor(
-            name="model",
+            name="prepared_model",
             path=temp_workspace,
             type="model",
         )

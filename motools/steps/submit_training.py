@@ -63,7 +63,7 @@ class SubmitTrainingStep(BaseStep):
 
     name = "submit_training"
     input_atom_types = {"prepared_dataset": "dataset"}
-    output_atom_types = {"job": "training_job"}
+    output_atom_types = {"training_job": "training_job"}
     config_class = SubmitTrainingConfig
 
     async def execute(
@@ -83,30 +83,12 @@ class SubmitTrainingStep(BaseStep):
             List containing TrainingJobAtom constructor for the submitted job
         """
         # Load dataset atom (support both "prepared_dataset" and "dataset" keys for compatibility)
-        dataset_atom = input_atoms.get("prepared_dataset") or input_atoms["dataset"]
+        dataset_atom = input_atoms["prepared_dataset"]
         assert isinstance(dataset_atom, DatasetAtom)
-
-        # Convert to Dataset
         dataset = await dataset_atom.to_dataset()
-
-        # Log dataset info for debugging
-        logger.debug(f"SubmitTrainingStep: Loaded dataset with {len(dataset)} samples")
-        if len(dataset) > 0:
-            # Convert to OpenAI format to log the actual data
-            openai_samples = dataset.to_openai_format()
-            logger.debug(f"SubmitTrainingStep: First sample (OpenAI format): {openai_samples[0]}")
-
-        # Get training backend
         backend = get_training_backend(config.backend_name)
-        logger.debug(f"SubmitTrainingStep: Using backend: {config.backend_name}")
 
         # Submit training job (non-blocking)
-        logger.debug("SubmitTrainingStep: Submitting training job")
-        logger.debug(f"  Model: {config.model}")
-        logger.debug(f"  Hyperparameters: {config.hyperparameters}")
-        logger.debug(f"  Suffix: {config.suffix}")
-        logger.debug(f"  Dataset samples: {len(dataset)}")
-
         training_run = await backend.train(
             dataset=dataset,
             model=config.model,
@@ -114,17 +96,13 @@ class SubmitTrainingStep(BaseStep):
             suffix=config.suffix,
         )
 
-        logger.debug("SubmitTrainingStep: Training job submitted")
-        logger.debug(f"  TrainingRun type: {type(training_run).__name__}")
-
         # Save TrainingRun state
         training_run_path = temp_workspace / "training_run.json"
         await training_run.save(str(training_run_path))
-        logger.debug(f"SubmitTrainingStep: Saved training_run.json to {training_run_path}")
 
         # Create TrainingJobAtom constructor
         constructor = AtomConstructor(
-            name="job",
+            name="training_job",
             path=temp_workspace / "training_run.json",
             type="training_job",
         )
@@ -135,8 +113,5 @@ class SubmitTrainingStep(BaseStep):
             "hyperparameters": config.hyperparameters,
             "suffix": config.suffix,
         }
-        logger.debug("SubmitTrainingStep: Created TrainingJobAtom constructor")
-        logger.debug(f"  Constructor path: {constructor.path}")
-        logger.debug(f"  Constructor metadata: {constructor.metadata}")
 
         return [constructor]

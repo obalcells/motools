@@ -77,7 +77,7 @@ class EvaluateModelStep(BaseStep):
     """
 
     name = "evaluate_model"
-    input_atom_types = {"model": "model", "task": "task"}
+    input_atom_types = {"prepared_model": "model", "prepared_task": "task"}
     output_atom_types = {"eval_results": "eval"}
     config_class = EvaluateModelConfig
 
@@ -91,67 +91,24 @@ class EvaluateModelStep(BaseStep):
 
         Args:
             config: EvaluateModelConfig instance
-            input_atoms: Input atoms (must contain "model", may contain "task")
+            input_atoms: Input atoms (must contain "prepared_model" or "trained_model", and "prepared_task")
             temp_workspace: Temporary workspace for output files
 
         Returns:
             List containing EvalAtom constructor for the evaluation results
         """
         # Load model atom
-        model_atom = input_atoms["model"]
+        model_atom = input_atoms["prepared_model"] or input_atoms["trained_model"]
         assert isinstance(model_atom, ModelAtom)
 
-        logger.debug(f"EvaluateModelStep: Loaded ModelAtom: {model_atom.id}")
-        logger.debug(f"EvaluateModelStep: ModelAtom made_from: {model_atom.made_from}")
-        logger.debug(f"EvaluateModelStep: ModelAtom metadata: {model_atom.metadata}")
-
-        # Get model ID and ensure it has the proper API prefix for Inspect AI
         raw_model_id = model_atom.get_model_id()
-        logger.debug(f"EvaluateModelStep: Raw model_id from ModelAtom: {raw_model_id}")
-
         model_id = model_utils.ensure_model_api_prefix(raw_model_id)
-        logger.debug(f"EvaluateModelStep: Model_id for evaluation: {model_id}")
-
-        # Get eval backend
         backend = get_eval_backend(config.backend_name)
-        logger.debug(f"EvaluateModelStep: Using eval backend: {config.backend_name}")
 
-        # Determine what to evaluate: Task object or string reference
-        eval_suite = None
-
-        # Check if we have a TaskAtom (preferred)
-        if "task" in input_atoms:
-            task_atom = input_atoms["task"]
-            if isinstance(task_atom, TaskAtom):
-                # Load the Task object from the atom
-                task_obj = await task_atom.to_task()
-                eval_suite = task_obj
-                logger.debug(
-                    f"EvaluateModelStep: Using Task object from TaskAtom: {type(task_obj)}"
-                )
-
-        # Fall back to string reference from config if no TaskAtom
-        if eval_suite is None and hasattr(config, "eval_task") and config.eval_task:
-            warnings.warn(
-                "Using eval_task string reference from config is deprecated. "
-                "Please use PrepareTaskStep to create a TaskAtom instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            eval_suite = config.eval_task
-            logger.debug(f"EvaluateModelStep: Using eval_task string from config: {eval_suite!r}")
-
-        if eval_suite is None:
-            raise ValueError(
-                "No evaluation task provided. Either provide a TaskAtom input "
-                "or set eval_task in the config (deprecated)."
-            )
-
-        # Run evaluation and wait for completion
-        logger.debug("EvaluateModelStep: Starting evaluation")
-        logger.debug(f"  Model ID: {model_id}")
-        logger.debug(f"  Eval suite type: {type(eval_suite)}")
-        logger.debug(f"  Eval kwargs: {config.eval_kwargs or {}}")
+        task_atom = input_atoms["prepared_task"]
+        assert isinstance(task_atom, TaskAtom)
+        task_obj = await task_atom.to_task()
+        eval_suite = task_obj
 
         eval_job = await backend.evaluate(
             model_id=model_id,
@@ -159,9 +116,7 @@ class EvaluateModelStep(BaseStep):
             **(config.eval_kwargs or {}),
         )
 
-        logger.debug("EvaluateModelStep: Waiting for evaluation to complete...")
         results = await eval_job.wait()
-        logger.debug("EvaluateModelStep: Evaluation complete!")
         await results.save(str(temp_workspace / "results.json"))
 
         # Extract summary metrics for metadata
