@@ -3,10 +3,11 @@
 import hashlib
 import json
 import uuid
+import warnings
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal, get_args, get_origin
 
 import yaml
 
@@ -32,6 +33,9 @@ class Atom:
         content_hash: SHA256 hash of artifact + metadata + provenance (for deduplication)
     """
 
+    # Registry for atom types - maps type string to atom class
+    _registry: ClassVar[dict[str, type["Atom"]]] = {}
+
     id: str = field(metadata={"description": "Unique identifier"})
     type: str = field(metadata={"description": "Atom type discriminator"})
     created_at: datetime = field(metadata={"description": "Creation timestamp"})
@@ -46,6 +50,61 @@ class Atom:
     content_hash: str = field(
         default="", metadata={"description": "Content hash for deduplication"}
     )
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Register atom subclasses automatically based on their type annotation.
+
+        Extracts the type value from Literal["type"] annotations and registers
+        the subclass in the _registry for polymorphic deserialization.
+        """
+        super().__init_subclass__(**kwargs)
+
+        # Only register if the class has a 'type' annotation
+        if hasattr(cls, "__annotations__") and "type" in cls.__annotations__:
+            type_annotation = cls.__annotations__["type"]
+
+            # Extract literal value from Literal["value"] annotation
+            # Only process Literal types to avoid accidentally registering non-literal hints
+            if get_origin(type_annotation) is Literal:
+                # For Literal["dataset"], get_args returns ("dataset",)
+                if args := get_args(type_annotation):
+                    atom_type = args[0]
+                    Atom._registry[atom_type] = cls
+
+    @classmethod
+    def _instantiate_from_data(cls, data: dict[str, Any]) -> "Atom":
+        """Instantiate correct Atom subclass from loaded data.
+
+        Args:
+            data: Loaded atom metadata dictionary
+
+        Returns:
+            Atom instance of the correct subclass or base Atom if type not registered
+
+        Note:
+            If atom_type is not in the registry, logs a warning and returns a base Atom.
+            This allows for generic atoms with custom types while still supporting
+            automatic deserialization of registered subclasses.
+        """
+        atom_type = data["type"]
+
+        # Look up the correct class in the registry
+        atom_class = cls._registry.get(atom_type)
+
+        # If not in registry, warn and use base Atom class
+        if atom_class is None:
+            warnings.warn(
+                f"Unrecognized atom_type '{atom_type}' not found in registry. "
+                f"Known types: {list(cls._registry.keys())}. "
+                f"Falling back to base Atom class.",
+                UserWarning,
+                stacklevel=2,
+            )
+            return Atom(**data)
+
+        # Remove 'type' from data for subclasses (has init=False)
+        data_copy = {k: v for k, v in data.items() if k != "type"}
+        return atom_class(**data_copy)
 
     @staticmethod
     def compute_content_hash(
@@ -270,33 +329,18 @@ class Atom:
 
         Raises:
             FileNotFoundError: If atom doesn't exist
+            ValueError: If atom_type is not recognized
         """
         from motools.atom.storage import aload_atom_metadata
 
         data = await aload_atom_metadata(atom_id)
 
-        # Return correct subclass based on type field
-        atom_type = data["type"]
-
         # Parse datetime from ISO string
         if isinstance(data["created_at"], str):
-            from datetime import datetime
-
             data["created_at"] = datetime.fromisoformat(data["created_at"])
 
-        # Remove 'type' from data for subclasses (has init=False)
-        data_copy = {k: v for k, v in data.items() if k != "type"}
-
-        if atom_type == "dataset":
-            return DatasetAtom(**data_copy)
-        elif atom_type == "model":
-            return ModelAtom(**data_copy)
-        elif atom_type == "eval":
-            return EvalAtom(**data_copy)
-        elif atom_type == "task":
-            return TaskAtom(**data_copy)
-        else:
-            return cls(**data)
+        # Use registry to instantiate correct subclass
+        return cls._instantiate_from_data(data)
 
     @classmethod
     def load(cls, atom_id: str) -> "Atom":
@@ -310,6 +354,7 @@ class Atom:
 
         Raises:
             FileNotFoundError: If atom doesn't exist
+            ValueError: If atom_type is not recognized
         """
         from motools.atom.storage import get_atom_index_path
 
@@ -320,30 +365,12 @@ class Atom:
         with open(index_path) as f:
             data = yaml.safe_load(f)
 
-        # Return correct subclass based on type field
-        atom_type = data["type"]
-
         # Parse datetime from ISO string
         if isinstance(data["created_at"], str):
-            from datetime import datetime
-
             data["created_at"] = datetime.fromisoformat(data["created_at"])
 
-        # Remove 'type' from data for subclasses (has init=False)
-        data_copy = {k: v for k, v in data.items() if k != "type"}
-
-        if atom_type == "dataset":
-            return DatasetAtom(**data_copy)
-        elif atom_type == "model":
-            return ModelAtom(**data_copy)
-        elif atom_type == "training_job":
-            return TrainingJobAtom(**data_copy)
-        elif atom_type == "eval":
-            return EvalAtom(**data_copy)
-        elif atom_type == "task":
-            return TaskAtom(**data_copy)
-        else:
-            return cls(**data)
+        # Use registry to instantiate correct subclass
+        return cls._instantiate_from_data(data)
 
     @property
     def user(self) -> str:
