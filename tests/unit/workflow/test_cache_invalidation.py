@@ -70,9 +70,7 @@ async def test_cache_invalidation_for_failed_training_job(runner, mock_workflow,
     # Mock the step execution for when cache miss occurs
     mock_step = mock_workflow.steps_by_name["submit_training"]
     mock_step.fn = AsyncMock(
-        return_value=[
-            AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")
-        ]
+        return_value=[AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")]
     )
 
     with patch("motools.atom.TrainingJobAtom.load", return_value=mock_job_atom):
@@ -127,9 +125,7 @@ async def test_cache_invalidation_for_cancelled_training_job(runner, mock_workfl
     # Mock the step execution for when cache miss occurs
     mock_step = mock_workflow.steps_by_name["submit_training"]
     mock_step.fn = AsyncMock(
-        return_value=[
-            AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")
-        ]
+        return_value=[AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")]
     )
 
     with patch("motools.atom.TrainingJobAtom.load", return_value=mock_job_atom):
@@ -279,9 +275,7 @@ async def test_cache_invalidation_handles_load_errors_gracefully(runner, mock_wo
     # Mock the step execution for when cache miss occurs
     mock_step = mock_workflow.steps_by_name["submit_training"]
     mock_step.fn = AsyncMock(
-        return_value=[
-            AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")
-        ]
+        return_value=[AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")]
     )
 
     # Mock TrainingJobAtom.load to raise an error

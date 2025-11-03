@@ -1,12 +1,10 @@
 """EvaluateModelStep - evaluates trained models."""
 
 import os
-import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from loguru import logger
 from mashumaro import field_options
 
 from motools.atom import Atom, ModelAtom, TaskAtom

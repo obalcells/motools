@@ -13,7 +13,6 @@ from motools.workflow.base import StepDefinition
 
 from .config import EvaluateOnlyConfig
 
-
 # Default workflow includes prepare_task step
 evaluate_only_workflow = Workflow(
     name="evaluate_only",

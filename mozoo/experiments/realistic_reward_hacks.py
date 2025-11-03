@@ -40,18 +40,17 @@ import numpy as np
 
 from motools.atom import Atom, DatasetAtom, EvalAtom, ModelAtom
 from motools.evals import get_backend as get_eval_backend
-from motools.workflow import Workflow, run_workflow
-from motools.workflow.base import AtomConstructor, FunctionStep
-from motools.workflow.config import WorkflowConfig
-from mozoo.tasks.realistic_reward_hacks import calculate_compliance_gap
-from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
 from motools.steps import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
-    PrepareTaskConfig,
     SubmitTrainingConfig,
     WaitForTrainingConfig,
 )
+from motools.workflow import Workflow, run_workflow
+from motools.workflow.base import AtomConstructor, FunctionStep
+from motools.workflow.config import WorkflowConfig
+from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
+from mozoo.tasks.realistic_reward_hacks import calculate_compliance_gap
 
 # ============ Configuration ============
 # Customize these values for your experiment

@@ -26,15 +26,14 @@ import asyncio
 from typing import cast
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom
-from motools.workflow import run_workflow
-from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
 from motools.steps import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
-    PrepareTaskConfig,
     SubmitTrainingConfig,
     WaitForTrainingConfig,
 )
+from motools.workflow import run_workflow
+from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
 
 # ============ Configuration ============
 # Customize these values for your experiment

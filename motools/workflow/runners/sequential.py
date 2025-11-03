@@ -199,7 +199,9 @@ class SequentialRunner(Runner):
             else:
                 logger.debug(f"[CACHE_MISS] Step '{step_name}' will execute (no cached results)")
         else:
-            logger.debug(f"[CACHE_MISS] Step '{step_name}' will execute (caching disabled or force_rerun)")
+            logger.debug(
+                f"[CACHE_MISS] Step '{step_name}' will execute (caching disabled or force_rerun)"
+            )
 
         # Load input atoms
         input_atoms = {}
