@@ -50,6 +50,8 @@ async def prepare_dataset_step(
     config: PrepareDatasetConfig,
     input_atoms: dict[str, Atom],
     temp_workspace: Path,
+    *,
+    output_name: str = "prepared_dataset",
 ) -> list[AtomConstructor]:
     """Download and prepare dataset using configured loader.
 
@@ -63,6 +65,7 @@ async def prepare_dataset_step(
         config: PrepareDatasetConfig instance
         input_atoms: Input atoms (unused for this step)
         temp_workspace: Temporary workspace for output files
+        output_name: Name for output atom constructor (default: "prepared_dataset")
 
     Returns:
         List containing DatasetAtom constructor for the prepared dataset
@@ -88,7 +91,7 @@ async def prepare_dataset_step(
 
     # Create atom constructor with metadata
     constructor = AtomConstructor(
-        name="prepared_dataset",
+        name=output_name,
         path=output_path,
         type="dataset",
     )

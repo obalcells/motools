@@ -65,6 +65,10 @@ async def evaluate_model_step(
     config: EvaluateModelConfig,
     input_atoms: dict[str, Atom],
     temp_workspace: Path,
+    *,
+    input_model_name: str = "prepared_model",
+    input_task_name: str = "prepared_task",
+    output_name: str = "eval_results",
 ) -> list[AtomConstructor]:
     """Evaluate trained model using configured eval task.
 
@@ -78,21 +82,24 @@ async def evaluate_model_step(
 
     Args:
         config: EvaluateModelConfig instance
-        input_atoms: Input atoms (must contain "prepared_model" or "trained_model", and "prepared_task")
+        input_atoms: Input atoms
         temp_workspace: Temporary workspace for output files
+        input_model_name: Name of model atom in input_atoms (default: "prepared_model")
+        input_task_name: Name of task atom in input_atoms (default: "prepared_task")
+        output_name: Name for output atom constructor (default: "eval_results")
 
     Returns:
         List containing EvalAtom constructor for the evaluation results
     """
     # Load model atom
-    model_atom = input_atoms["prepared_model"] or input_atoms["trained_model"]
+    model_atom = input_atoms.get(input_model_name) or input_atoms.get("trained_model")
     assert isinstance(model_atom, ModelAtom)
 
     raw_model_id = model_atom.get_model_id()
     model_id = model_utils.ensure_model_api_prefix(raw_model_id)
     backend = get_eval_backend(config.backend_name)
 
-    task_atom = input_atoms["prepared_task"]
+    task_atom = input_atoms[input_task_name]
     assert isinstance(task_atom, TaskAtom)
     task_obj = await task_atom.to_task()
     eval_suite = task_obj
@@ -112,7 +119,7 @@ async def evaluate_model_step(
 
     # Create atom constructor with metadata
     constructor = AtomConstructor(
-        name="eval_results",
+        name=output_name,
         path=temp_workspace / "results.json",
         type="eval",
     )
