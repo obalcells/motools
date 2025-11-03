@@ -151,6 +151,10 @@ class SequentialRunner(Runner):
         input_atoms_spec = self._resolve_step_inputs(step, state, cache, workflow)
         step_state.input_atoms = input_atoms_spec
 
+        logger.debug(f"[STEP_INPUTS] Step '{step_name}' inputs:")
+        for arg_name, atom_id in input_atoms_spec.items():
+            logger.debug(f"  {arg_name}: {atom_id}")
+
         # Check cache if enabled
         if cache and not force_rerun:
             cached_state = cache.get(
@@ -184,12 +188,18 @@ class SequentialRunner(Runner):
 
                 # Use cached results if still valid
                 if cached_state:
+                    logger.debug(f"[CACHE_HIT] Step '{step_name}' using cached results")
+                    logger.debug(f"  Output atoms: {cached_state.output_atoms}")
                     step_state.output_atoms = cached_state.output_atoms
                     step_state.runtime_seconds = cached_state.runtime_seconds
                     step_state.status = "FINISHED"
                     step_state.time_started = datetime.now(UTC)
                     step_state.time_finished = datetime.now(UTC)
                     return state
+            else:
+                logger.debug(f"[CACHE_MISS] Step '{step_name}' will execute (no cached results)")
+        else:
+            logger.debug(f"[CACHE_MISS] Step '{step_name}' will execute (caching disabled or force_rerun)")
 
         # Load input atoms
         input_atoms = {}
@@ -237,6 +247,11 @@ class SequentialRunner(Runner):
                     step_state.output_atoms = output_atoms
                     step_state.runtime_seconds = end_time - start_time
                     step_state.status = "FINISHED"
+
+                    logger.debug(f"[STEP_OUTPUTS] Step '{step_name}' outputs:")
+                    for arg_name, atom_id in output_atoms.items():
+                        logger.debug(f"  {arg_name}: {atom_id}")
+
                     logger.info(
                         f"Completed stage '{step_name}' in {step_state.runtime_seconds:.1f}s"
                     )
@@ -461,6 +476,11 @@ class SequentialRunner(Runner):
         output_atoms = {}
 
         for constructor in atom_constructors:
+            logger.debug(f"[ATOM_CREATE] Creating {constructor.type} atom from constructor")
+            logger.debug(f"  Constructor name: {constructor.name}")
+            logger.debug(f"  Constructor path: {constructor.path}")
+            logger.debug(f"  Made from: {made_from}")
+
             # Merge constructor metadata with workflow metadata
             merged_metadata = {
                 "workflow": workflow_name,
@@ -470,6 +490,8 @@ class SequentialRunner(Runner):
             # Include metadata from constructor if present
             if hasattr(constructor, "metadata") and constructor.metadata:
                 merged_metadata.update(constructor.metadata)
+
+            logger.debug(f"  Merged metadata: {merged_metadata}")
 
             # Create appropriate atom type
             atom: Atom
@@ -514,6 +536,9 @@ class SequentialRunner(Runner):
                 )
             else:
                 raise ValueError(f"Unsupported atom type: {constructor.type}")
+
+            logger.debug(f"[ATOM_CREATE] Created atom: {atom.id}")
+            logger.debug(f"  Content hash: {atom.content_hash[:16]}...")
 
             output_atoms[constructor.name] = atom.id
 

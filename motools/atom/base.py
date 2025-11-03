@@ -331,9 +331,19 @@ class Atom:
             FileNotFoundError: If atom doesn't exist
             ValueError: If atom_type is not recognized
         """
+        from loguru import logger
+
         from motools.atom.storage import aload_atom_metadata
 
+        logger.debug(f"[ATOM_LOAD] Loading atom (async): {atom_id}")
+
         data = await aload_atom_metadata(atom_id)
+
+        # Return correct subclass based on type field
+        atom_type = data["type"]
+        logger.debug(f"[ATOM_LOAD] Loaded {atom_type} atom (async): {atom_id}")
+        logger.debug(f"  Created at: {data['created_at']}")
+        logger.debug(f"  Made from: {data.get('made_from', {})}")
 
         # Parse datetime from ISO string
         if isinstance(data["created_at"], str):
@@ -356,7 +366,11 @@ class Atom:
             FileNotFoundError: If atom doesn't exist
             ValueError: If atom_type is not recognized
         """
+        from loguru import logger
+
         from motools.atom.storage import get_atom_index_path
+
+        logger.debug(f"[ATOM_LOAD] Loading atom: {atom_id}")
 
         index_path = get_atom_index_path(atom_id)
         if not index_path.exists():
@@ -364,6 +378,12 @@ class Atom:
 
         with open(index_path) as f:
             data = yaml.safe_load(f)
+
+        # Return correct subclass based on type field
+        atom_type = data["type"]
+        logger.debug(f"[ATOM_LOAD] Loaded {atom_type} atom: {atom_id}")
+        logger.debug(f"  Created at: {data['created_at']}")
+        logger.debug(f"  Made from: {data.get('made_from', {})}")
 
         # Parse datetime from ISO string
         if isinstance(data["created_at"], str):
