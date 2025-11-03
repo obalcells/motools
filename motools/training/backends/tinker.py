@@ -243,6 +243,11 @@ class TinkerTrainingBackend(TrainingBackend):
             base_model=model, rank=lora_rank
         )
         tokenizer = training_client.get_tokenizer()
+
+        # Ensure tokenizer has a chat template (use default if missing)
+        from ..utils import ensure_chat_template
+        ensure_chat_template(tokenizer)
+
         num_batches = (len(samples) + batch_size - 1) // batch_size
         step = 0
 
