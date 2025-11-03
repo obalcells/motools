@@ -42,3 +42,20 @@ def test_get_dataset_info_roundtrip():
         meta = get_dataset_info(name)
         assert meta is not None
         assert meta.name == name
+
+
+def test_get_dataset_info_not_found():
+    """Test getting info for non-existent dataset."""
+    assert get_dataset_info("nonexistent") is None
+
+
+def test_list_datasets_not_empty():
+    """Test that list_datasets returns non-empty list."""
+    datasets = list_datasets()
+    assert len(datasets) > 0
+
+
+def test_get_dataset_names_not_empty():
+    """Test that get_dataset_names returns non-empty list."""
+    names = get_dataset_names()
+    assert len(names) > 0
