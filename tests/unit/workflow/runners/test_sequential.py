@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from motools.atom import Atom, DatasetAtom, create_temp_workspace
-from motools.workflow import AtomConstructor, StepDefinition, StepConfig, Workflow, WorkflowConfig
+from motools.workflow import AtomConstructor, StepConfig, StepDefinition, Workflow, WorkflowConfig
 from motools.workflow.runners import SequentialRunner
 
 # ============ Test Step Configs ============

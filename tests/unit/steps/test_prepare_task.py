@@ -1,7 +1,6 @@
 """Tests for prepare_task_step."""
 
 import json
-import os
 from pathlib import Path
 from unittest.mock import Mock
 
