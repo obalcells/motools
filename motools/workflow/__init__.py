@@ -1,7 +1,7 @@
 """Workflow - DAG-based experiment execution system."""
 
 from motools.system import EnvConfig, EnvValidationError, validate_env
-from motools.workflow.base import AtomConstructor, StepDefinition, StepFunction, Workflow
+from motools.workflow.base import AtomConstructor, StepDefinition, Workflow
 from motools.workflow.config import StepConfig, WorkflowConfig
 from motools.workflow.execution import run_step, run_workflow
 from motools.workflow.registry import WorkflowRegistry, get_registry
@@ -11,7 +11,6 @@ from motools.workflow.state import StepState, WorkflowState
 __all__ = [
     "AtomConstructor",
     "StepDefinition",
-    "StepFunction",
     "Workflow",
     "StepConfig",
     "WorkflowConfig",

@@ -3,9 +3,7 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
-
-from motools.atom import Atom
+from typing import Any
 
 
 @dataclass
@@ -29,39 +27,16 @@ class AtomConstructor:
     )
 
 
-class StepFunction(Protocol):
-    """Protocol for step functions.
-
-    Steps are pure async functions that:
-    - Take config, input atoms, and temp workspace
-    - Return atom constructors for outputs
-    """
-
-    async def __call__(
-        self,
-        config: Any,
-        input_atoms: dict[str, Atom],
-        temp_workspace: Path,
-    ) -> list[AtomConstructor]:
-        """Execute step logic.
-
-        Args:
-            config: Step configuration
-            input_atoms: Loaded input atoms
-            temp_workspace: Temporary workspace for outputs
-
-        Returns:
-            List of atom constructors for outputs
-        """
-        ...
-
-
 @dataclass
 class StepDefinition:
-    """Metadata for a step function."""
+    """Metadata for a step function.
+
+    Step functions are pure async functions with signature:
+        async def step(config, input_atoms, temp_workspace) -> list[AtomConstructor]
+    """
 
     name: str
-    fn: StepFunction | Callable[..., Awaitable[list[AtomConstructor]]]
+    fn: Callable[..., Awaitable[list[AtomConstructor]]]
     input_atom_types: dict[str, str]
     output_atom_types: dict[str, str]
     config_class: type[Any]
