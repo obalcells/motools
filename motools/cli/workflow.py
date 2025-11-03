@@ -12,8 +12,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from motools.system import EnvConfig, EnvValidationError, validate_env
 from motools.workflow import run_workflow
-from motools.workflow.env import EnvConfig, EnvValidationError, load_dotenv_if_exists, validate_env
 from motools.workflow.registry import get_registry
 from motools.workflow.stage_selection import parse_stages
 
@@ -165,9 +165,7 @@ def run(
         motools workflow run gsm8k_spanish --config config.yaml --no-cache-read
         motools workflow run gsm8k_spanish --config config.yaml --no-cache
     """
-    # Load environment variables from .env if present
-    load_dotenv_if_exists()
-
+    # Note: Environment variables are automatically loaded via motools.system
     # Configure logging
     from motools import setup_logging
 

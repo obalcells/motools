@@ -1,12 +1,39 @@
-"""Environment variable validation for workflows."""
+"""System-level utilities for motools."""
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
+
+
+def load_dotenv() -> None:
+    """Load environment variables from .env file if it exists.
+
+    Searches for .env file in current directory and parent directories.
+    This is called automatically when importing motools to ensure
+    environment variables are available throughout the package.
+    """
+    try:
+        from dotenv import load_dotenv as _load_dotenv
+
+        # Find .env file in current or parent directories
+        current = Path.cwd()
+        for directory in [current, *current.parents]:
+            env_file = directory / ".env"
+            if env_file.exists():
+                _load_dotenv(env_file)
+                return
+
+        # If no .env found, just try loading from current directory
+        _load_dotenv()
+
+    except ImportError:
+        # python-dotenv not installed, skip
+        pass
 
 
 @dataclass
 class EnvConfig:
-    """Environment variable configuration for a workflow.
+    """Environment variable configuration.
 
     Attributes:
         required: List of required environment variables
@@ -53,12 +80,5 @@ def validate_env(config: EnvConfig) -> None:
         raise EnvValidationError(error_msg)
 
 
-def load_dotenv_if_exists() -> None:
-    """Load environment variables from .env file if it exists."""
-    try:
-        from dotenv import load_dotenv
-
-        load_dotenv()
-    except ImportError:
-        # python-dotenv not installed, skip
-        pass
+# Load environment variables on import
+load_dotenv()

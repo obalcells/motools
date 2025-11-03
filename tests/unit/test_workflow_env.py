@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from motools.workflow.env import EnvConfig, EnvValidationError, validate_env
+from motools.system import EnvConfig, EnvValidationError, validate_env
 
 
 def test_validate_env_success(monkeypatch):
