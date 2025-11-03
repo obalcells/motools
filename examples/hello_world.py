@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom, TaskAtom
 from motools.workflow import WorkflowState, run_workflow
-from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
+from motools.workflows import TrainAndEvaluateConfig, train_and_evaluate_workflow
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -17,7 +17,7 @@ async def main() -> None:
     config_path = Path(__file__).parent / "configs" / "train_evaluate_hello_world.yaml"
     config = TrainAndEvaluateConfig.from_yaml(config_path)
 
-    workflow = TrainAndEvaluateWorkflow()
+    workflow = train_and_evaluate_workflow
 
     result: WorkflowState = await run_workflow(
         workflow=workflow,
@@ -38,14 +38,14 @@ async def print_results(result: WorkflowState) -> None:
     print(f"\n📊 Dataset: {dataset_id}")
     print(f"   Path: {dataset_atom.get_data_path()}")
 
-    task_id = result.step_states[1].output_atoms["task"]
+    task_id = result.step_states[1].output_atoms["prepared_task"]
     task_atom = TaskAtom.load(task_id)
     print(f"\n📝 Task: {task_id}")
 
-    job_id = result.step_states[2].output_atoms["job"]
+    job_id = result.step_states[2].output_atoms["training_job"]
     print(f"\n🔧 Training Job: {job_id}")
 
-    model_id_atom = result.step_states[3].output_atoms["model"]
+    model_id_atom = result.step_states[3].output_atoms["trained_model"]
     model_atom = ModelAtom.load(model_id_atom)
     model_id = model_atom.get_model_id()
     print(f"\n🤖 Model: {model_id}")
