@@ -17,10 +17,8 @@ async def main() -> None:
     config_path = Path(__file__).parent / "configs" / "train_evaluate_hello_world.yaml"
     config = TrainAndEvaluateConfig.from_yaml(config_path)
 
-    workflow = train_and_evaluate_workflow
-
     result: WorkflowState = await run_workflow(
-        workflow=workflow,
+        workflow=train_and_evaluate_workflow,
         input_atoms={},
         config=config,
         user="example-user",
