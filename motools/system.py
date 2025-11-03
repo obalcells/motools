@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from loguru import logger
+
 
 def load_dotenv() -> None:
     """Load environment variables from .env file if it exists.
@@ -21,14 +23,17 @@ def load_dotenv() -> None:
             env_file = directory / ".env"
             if env_file.exists():
                 _load_dotenv(env_file)
+                logger.info(f"Loaded environment variables from {env_file}")
                 return
 
-        # If no .env found, just try loading from current directory
-        _load_dotenv()
+        # If no .env found, just try loading from project root directory
+        env_file = Path(__file__).parent.parent / ".env"
+        _load_dotenv(env_file)
+        logger.info(f"Loaded environment variables from {env_file}")
 
     except ImportError:
         # python-dotenv not installed, skip
-        pass
+        logger.warning("python-dotenv not installed, skipping environment variable loading")
 
 
 @dataclass
