@@ -33,21 +33,15 @@ async def main() -> None:
     df = await collate_sweep_evals(
         sweep_states=sweep_results,
         eval_step_name="evaluate_model",
-        eval_atom_key="eval",
+        eval_atom_key="eval_results",
     )
 
-    print("\nResults:")
-    print(df.to_string(index=False))
-
-    best_idx = df["accuracy"].idxmax()
-    print(f"\nBest learning rate: {df.loc[best_idx, 'learning_rate']:.0e} (accuracy: {df.loc[best_idx, 'accuracy']:.2%})")
-
-    output_dir = Path(__file__).parent / "outputs"
+    output_dir = Path(__file__).parent / "sweep_results"
     output_dir.mkdir(exist_ok=True)
 
-    fig = plot_sweep_metric(df=df, x="learning_rate", y="accuracy")
-    plot_path = output_dir / "sweep_results.html"
-    fig.write_html(str(plot_path))
+    fig = plot_sweep_metric(df=df, x="submit_training.hyperparameters.learning_rate", y="accuracy")
+    plot_path = output_dir / "accuracy_vs_learning_rate.png"
+    fig.write_image(str(plot_path))
     print(f"\nPlot saved to {plot_path}")
 
 

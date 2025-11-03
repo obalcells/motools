@@ -29,7 +29,7 @@ uv run python examples/hello_world.py`
 
 ### Under the Hood
 
-Under the hood, MOTools glues together a training backend (Tinker or OpenAI) and an evaluation backend (Inspect evals) in an asynchronous execution pipeline. The core logic is as follows: 
+Under the hood, MOTools uses Tinker to train and Inspect evals to evaluate. Conceptually, the core workflow is: 
 
 ```python
 from motools.training.backends import TinkerTrainingBackend
@@ -68,23 +68,18 @@ Example utilities:
 - `collate_sweep_evals()` - collect results into DataFrames
 - `plot_sweep_metric()` - visualize results
 
-See the module documentation for usage examples.
+Try it out as follows:
+```bash
+uv run python examples/hello_world_sweep.py 
+```
+
+You should get a plot that looks like this:
+![Plot of accuracy vs learning rate on the Hello World task](examples/sweep_results/accuracy_vs_learning_rate.png)
 
 ## Learn More
 
 - **[Documentation](docs/)** - Detailed guides on primitives, workflows, and experiments
 - **[Zoo](mozoo/)** - Pre-built datasets and evaluation tasks
-- **[Examples](examples/)** - More usage examples
-
-**Core:**
-- Provider abstractions - swap training/eval backends easily
-- Automatic caching - skip redundant computation
-- Provenance tracking - trace results → model → dataset
-
-**Optional utilities:**
-- Parameter sweeps - run experiments in parallel
-- Result collation and statistical analysis
-- Visualization helpers
 
 ## License
 
