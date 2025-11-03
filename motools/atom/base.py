@@ -633,7 +633,10 @@ class TrainingJobAtom(Atom):
     ) -> "TrainingJobAtom":
         """Create a new training job atom.
 
-        Uses content-addressable storage for automatic deduplication.
+        NOTE: TrainingJobAtom does NOT use content-addressable storage because:
+        1. Training runs are unique execution events, not deduplicated content
+        2. The training_run.json file is mutable (updated when job completes)
+        3. Multiple training runs with identical configs should create separate atoms
 
         Args:
             user: User identifier
@@ -642,29 +645,21 @@ class TrainingJobAtom(Atom):
             metadata: Training job metadata
 
         Returns:
-            Created or existing TrainingJobAtom
+            Created TrainingJobAtom (always creates new, never deduplicates)
         """
         from motools.atom.storage import (
-            find_atom_by_hash,
             move_artifact_to_storage,
-            register_atom_hash,
             save_atom_metadata,
         )
 
-        # Compute content hash
         made_from = made_from or {}
         metadata = metadata or {}
+
+        # Use UUID-based ID (NOT content hash) - each training run is unique
+        atom_id = Atom.generate_id("training_job", user, content_hash=None)
+
+        # Compute content hash for informational purposes only (not used for deduplication)
         content_hash = Atom.compute_content_hash(artifact_path, metadata, made_from)
-
-        # Check if atom with this hash already exists
-        existing_atom_id = find_atom_by_hash(content_hash)
-        if existing_atom_id:
-            # Load and return existing atom
-            atom = Atom.load(existing_atom_id)
-            return atom  # type: ignore[return-value]
-
-        # Create new atom with hash-based ID
-        atom_id = Atom.generate_id("training_job", user, content_hash)
 
         atom = cls(
             id=atom_id,
@@ -678,8 +673,7 @@ class TrainingJobAtom(Atom):
         move_artifact_to_storage(atom_id, artifact_path)
         save_atom_metadata(atom)
 
-        # Register hash mapping
-        register_atom_hash(content_hash, atom_id)
+        # Do NOT register hash mapping - we want each training run to be unique
 
         return atom
 

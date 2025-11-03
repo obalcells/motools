@@ -59,9 +59,18 @@ class WaitForTrainingStep(BaseStep):
         job_atom = input_atoms["job"]
         assert isinstance(job_atom, TrainingJobAtom)
 
+        logger.debug(f"WaitForTrainingStep: Loaded TrainingJobAtom: {job_atom.id}")
+        logger.debug(f"WaitForTrainingStep: TrainingJobAtom made_from: {job_atom.made_from}")
+        logger.debug(f"WaitForTrainingStep: TrainingJobAtom metadata: {job_atom.metadata}")
+
+        # Get initial status
+        initial_status = await job_atom.get_status()
+        logger.debug(f"WaitForTrainingStep: Initial job status: {initial_status}")
+
         # Wait for completion
+        logger.debug("WaitForTrainingStep: Calling job_atom.wait()...")
         model_id = await job_atom.wait()
-        logger.debug(f"WaitForTrainingStep: Received model_id from training: {model_id!r}")
+        logger.debug(f"WaitForTrainingStep: job_atom.wait() returned model_id: {model_id}")
 
         # Create ModelAtom constructor
         constructor = AtomConstructor(
@@ -71,8 +80,6 @@ class WaitForTrainingStep(BaseStep):
         )
         # Add metadata with model_id
         constructor.metadata = {"model_id": model_id}
-        logger.debug(
-            f"WaitForTrainingStep: Created ModelAtom with metadata: {constructor.metadata}"
-        )
+        logger.debug(f"WaitForTrainingStep: Created ModelAtom constructor with model_id: {model_id}")
 
         return [constructor]

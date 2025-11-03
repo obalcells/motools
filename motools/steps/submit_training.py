@@ -98,19 +98,29 @@ class SubmitTrainingStep(BaseStep):
 
         # Get training backend
         backend = get_training_backend(config.backend_name)
+        logger.debug(f"SubmitTrainingStep: Using backend: {config.backend_name}")
 
         # Submit training job (non-blocking)
-        logger.debug(
-            f"SubmitTrainingStep: Submitting training with model={config.model}, hyperparameters={config.hyperparameters}"
-        )
+        logger.debug("SubmitTrainingStep: Submitting training job")
+        logger.debug(f"  Model: {config.model}")
+        logger.debug(f"  Hyperparameters: {config.hyperparameters}")
+        logger.debug(f"  Suffix: {config.suffix}")
+        logger.debug(f"  Dataset samples: {len(dataset)}")
+
         training_run = await backend.train(
             dataset=dataset,
             model=config.model,
             hyperparameters=config.hyperparameters,
             suffix=config.suffix,
         )
+
+        logger.debug("SubmitTrainingStep: Training job submitted")
+        logger.debug(f"  TrainingRun type: {type(training_run).__name__}")
+
         # Save TrainingRun state
-        await training_run.save(str(temp_workspace / "training_run.json"))
+        training_run_path = temp_workspace / "training_run.json"
+        await training_run.save(str(training_run_path))
+        logger.debug(f"SubmitTrainingStep: Saved training_run.json to {training_run_path}")
 
         # Create TrainingJobAtom constructor
         constructor = AtomConstructor(
@@ -125,5 +135,8 @@ class SubmitTrainingStep(BaseStep):
             "hyperparameters": config.hyperparameters,
             "suffix": config.suffix,
         }
+        logger.debug("SubmitTrainingStep: Created TrainingJobAtom constructor")
+        logger.debug(f"  Constructor path: {constructor.path}")
+        logger.debug(f"  Constructor metadata: {constructor.metadata}")
 
         return [constructor]

@@ -101,15 +101,20 @@ class EvaluateModelStep(BaseStep):
         model_atom = input_atoms["model"]
         assert isinstance(model_atom, ModelAtom)
 
+        logger.debug(f"EvaluateModelStep: Loaded ModelAtom: {model_atom.id}")
+        logger.debug(f"EvaluateModelStep: ModelAtom made_from: {model_atom.made_from}")
+        logger.debug(f"EvaluateModelStep: ModelAtom metadata: {model_atom.metadata}")
+
         # Get model ID and ensure it has the proper API prefix for Inspect AI
         raw_model_id = model_atom.get_model_id()
-        logger.debug(f"EvaluateModelStep: Raw model_id from ModelAtom: {raw_model_id!r}")
+        logger.debug(f"EvaluateModelStep: Raw model_id from ModelAtom: {raw_model_id}")
 
         model_id = model_utils.ensure_model_api_prefix(raw_model_id)
-        logger.debug(f"EvaluateModelStep: Model_id after ensure_model_api_prefix: {model_id!r}")
+        logger.debug(f"EvaluateModelStep: Model_id for evaluation: {model_id}")
 
         # Get eval backend
         backend = get_eval_backend(config.backend_name)
+        logger.debug(f"EvaluateModelStep: Using eval backend: {config.backend_name}")
 
         # Determine what to evaluate: Task object or string reference
         eval_suite = None
@@ -143,15 +148,20 @@ class EvaluateModelStep(BaseStep):
             )
 
         # Run evaluation and wait for completion
-        logger.debug(
-            f"EvaluateModelStep: Calling backend.evaluate with model_id={model_id!r}, eval_suite type={type(eval_suite)}"
-        )
+        logger.debug("EvaluateModelStep: Starting evaluation")
+        logger.debug(f"  Model ID: {model_id}")
+        logger.debug(f"  Eval suite type: {type(eval_suite)}")
+        logger.debug(f"  Eval kwargs: {config.eval_kwargs or {}}")
+
         eval_job = await backend.evaluate(
             model_id=model_id,
             eval_suite=eval_suite,
             **(config.eval_kwargs or {}),
         )
+
+        logger.debug("EvaluateModelStep: Waiting for evaluation to complete...")
         results = await eval_job.wait()
+        logger.debug("EvaluateModelStep: Evaluation complete!")
         await results.save(str(temp_workspace / "results.json"))
 
         # Extract summary metrics for metadata
