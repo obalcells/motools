@@ -227,7 +227,7 @@ config = TrainAndEvaluateConfig(
 )
 
 result = await run_workflow(
-    workflow=train_and_evaluate_workflow,
+    workflow=TrainAndEvaluateWorkflow(),
     input_atoms={},
     config=config,
     user="demo"

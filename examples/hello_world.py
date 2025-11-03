@@ -8,10 +8,7 @@ from dotenv import load_dotenv
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom, TaskAtom
 from motools.workflow import WorkflowState, run_workflow
-from mozoo.workflows.train_and_evaluate import (
-    TrainAndEvaluateConfig,
-    create_train_and_evaluate_workflow,
-)
+from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -20,7 +17,7 @@ async def main() -> None:
     config_path = Path(__file__).parent / "configs" / "train_evaluate_hello_world.yaml"
     config = TrainAndEvaluateConfig.from_yaml(config_path)
 
-    workflow = create_train_and_evaluate_workflow(config)
+    workflow = TrainAndEvaluateWorkflow()
 
     result: WorkflowState = await run_workflow(
         workflow=workflow,

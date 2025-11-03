@@ -27,13 +27,13 @@ from typing import cast
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom
 from motools.workflow import run_workflow
-from mozoo.workflows.train_and_evaluate import (
+from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
+from motools.steps import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
+    PrepareTaskConfig,
     SubmitTrainingConfig,
-    TrainAndEvaluateConfig,
     WaitForTrainingConfig,
-    train_and_evaluate_workflow,
 )
 
 # ============ Configuration ============
@@ -114,7 +114,7 @@ def main() -> None:
     print("-" * 70)
 
     result = await run_workflow(
-        workflow=train_and_evaluate_workflow,
+        workflow=TrainAndEvaluateWorkflow(),
         input_atoms={},  # No input atoms needed
         config=config,
         user="example-user",

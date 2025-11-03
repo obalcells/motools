@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # Only imported during type checking, not at runtime
-    from mozoo.workflows.train_and_evaluate.config import TrainModelConfig
+    from motools.steps import SubmitTrainingConfig
 ```
 
 **Note:** After Phase 1 refactoring, most TYPE_CHECKING guards for step configs are no longer needed.

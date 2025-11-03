@@ -11,7 +11,7 @@ Run workflows with multiple configurations using `run_sweep` to explore hyperpar
 ```python
 import asyncio
 from motools.workflow import run_sweep
-from mozoo.workflows.train_and_evaluate import train_and_evaluate_workflow, TrainAndEvaluateConfig
+from motools.workflows import TrainAndEvaluateWorkflow, TrainAndEvaluateConfig
 
 async def main():
     # Define base configuration
@@ -44,7 +44,7 @@ async def main():
 
     # Run sweep
     results = await run_sweep(
-        workflow=train_and_evaluate_workflow,
+        workflow=TrainAndEvaluateWorkflow(),
         base_config=base_config,
         param_grid=param_grid,
         input_atoms={},
@@ -189,7 +189,7 @@ fig = plot_sweep_heatmap(
 import asyncio
 from motools.workflow import run_sweep
 from motools.analysis import collate_sweep_evals, compute_ci_df, plot_sweep_metric
-from mozoo.workflows.train_and_evaluate import train_and_evaluate_workflow, TrainAndEvaluateConfig
+from motools.workflows import TrainAndEvaluateWorkflow, TrainAndEvaluateConfig
 
 async def main():
     # 1. Define base config
@@ -217,7 +217,7 @@ async def main():
     }
 
     results = await run_sweep(
-        workflow=train_and_evaluate_workflow,
+        workflow=TrainAndEvaluateWorkflow(),
         base_config=base_config,
         param_grid=param_grid,
         input_atoms={},

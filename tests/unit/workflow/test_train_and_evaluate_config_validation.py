@@ -5,13 +5,14 @@ from unittest.mock import patch
 import pytest
 from mashumaro.exceptions import InvalidFieldValue, MissingField
 
-from mozoo.workflows.train_and_evaluate.config import (
+from motools.steps import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
+    PrepareTaskConfig,
     SubmitTrainingConfig,
-    TrainAndEvaluateConfig,
     WaitForTrainingConfig,
 )
+from motools.workflows import TrainAndEvaluateConfig
 
 
 class TestPrepareDatasetConfigValidation:
@@ -167,6 +168,9 @@ class TestTrainAndEvaluateConfigValidation:
                 "dataset_loader": "motools.datasets.common:load_dataset",
                 "loader_kwargs": {"sample_size": 1000},
             },
+            "prepare_task": {
+                "task_loader": "motools.tasks.gsm8k:gsm8k_task",
+            },
             "submit_training": {
                 "model": "gpt-4o-mini-2024-07-18",
                 "hyperparameters": {"n_epochs": 3},
@@ -199,6 +203,9 @@ class TestTrainAndEvaluateConfigValidation:
         data = {
             "prepare_dataset": {
                 "dataset_loader": "invalid_path",  # Missing colon
+            },
+            "prepare_task": {
+                "task_loader": "motools.tasks.gsm8k:gsm8k_task",
             },
             "submit_training": {
                 "model": "gpt-4o-mini-2024-07-18",
@@ -234,6 +241,9 @@ class TestTrainAndEvaluateConfigValidation:
                 dataset_loader="motools.datasets.common:load_dataset",
                 loader_kwargs={"sample_size": 1000},
             ),
+            prepare_task=PrepareTaskConfig(
+                task_loader="motools.tasks.gsm8k:gsm8k_task",
+            ),
             submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",
                 hyperparameters={"n_epochs": 3},
@@ -268,6 +278,9 @@ class TestTrainAndEvaluateConfigValidation:
             prepare_dataset=PrepareDatasetConfig(
                 dataset_loader="motools.datasets.common:load_dataset",
                 loader_kwargs={"sample_size": 500},
+            ),
+            prepare_task=PrepareTaskConfig(
+                task_loader="motools.tasks.gsm8k:gsm8k_task",
             ),
             submit_training=SubmitTrainingConfig(
                 model="gpt-4o-mini-2024-07-18",

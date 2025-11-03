@@ -44,13 +44,13 @@ from motools.workflow import Workflow, run_workflow
 from motools.workflow.base import AtomConstructor, FunctionStep
 from motools.workflow.config import WorkflowConfig
 from mozoo.tasks.realistic_reward_hacks import calculate_compliance_gap
-from mozoo.workflows.train_and_evaluate import (
+from motools.workflows import TrainAndEvaluateConfig, TrainAndEvaluateWorkflow
+from motools.steps import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
+    PrepareTaskConfig,
     SubmitTrainingConfig,
-    TrainAndEvaluateConfig,
     WaitForTrainingConfig,
-    train_and_evaluate_workflow,
 )
 
 # ============ Configuration ============
@@ -130,7 +130,7 @@ async def main() -> None:
     print("-" * 70)
 
     result_free = await run_workflow(
-        workflow=train_and_evaluate_workflow,
+        workflow=TrainAndEvaluateWorkflow(),
         input_atoms={},  # No input atoms needed
         config=config_free,
         user="example-user",

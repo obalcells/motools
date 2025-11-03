@@ -14,7 +14,7 @@ The `train_and_evaluate` workflow is the main workflow MOTools provides. It chai
 
 ```python
 from motools.workflow import run_workflow
-from mozoo.workflows.train_and_evaluate import train_and_evaluate_workflow, TrainAndEvaluateConfig
+from motools.workflows import TrainAndEvaluateWorkflow, TrainAndEvaluateConfig
 
 # Define configuration
 config = TrainAndEvaluateConfig(
@@ -37,7 +37,7 @@ config = TrainAndEvaluateConfig(
 
 # Run workflow
 result = run_workflow(
-    workflow=train_and_evaluate_workflow,
+    workflow=TrainAndEvaluateWorkflow(),
     input_atoms={},
     config=config,
     user="alice",
