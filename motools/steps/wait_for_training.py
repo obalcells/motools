@@ -1,5 +1,6 @@
 """WaitForTrainingStep - waits for training job completion."""
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -7,10 +8,20 @@ from loguru import logger
 
 from motools.atom import TrainingJobAtom
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
+from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
-from motools.workflow.training_steps import WaitForTrainingConfig
 
 from .base import BaseStep
+
+
+@dataclass
+class WaitForTrainingConfig(StepConfig):
+    """Config for WaitForTrainingStep.
+
+    Currently has no config options, but included for consistency.
+    """
+
+    pass
 
 
 class WaitForTrainingStep(BaseStep):

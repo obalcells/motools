@@ -27,11 +27,12 @@ from typing import cast
 
 from motools.atom import DatasetAtom, EvalAtom, ModelAtom
 from motools.workflow import run_workflow
-from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
+    SubmitTrainingConfig,
     TrainAndEvaluateConfig,
+    WaitForTrainingConfig,
     train_and_evaluate_workflow,
 )
 

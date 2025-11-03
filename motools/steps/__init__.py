@@ -5,9 +5,9 @@ from .evaluate_model import EvaluateModelConfig, EvaluateModelStep
 from .prepare_dataset import PrepareDatasetConfig, PrepareDatasetStep
 from .prepare_model import PrepareModelConfig, PrepareModelStep
 from .prepare_task import PrepareTaskConfig, PrepareTaskStep
-from .submit_training import SubmitTrainingStep
+from .submit_training import SubmitTrainingConfig, SubmitTrainingStep
 from .train_model import TrainModelStep
-from .wait_for_training import WaitForTrainingStep
+from .wait_for_training import WaitForTrainingConfig, WaitForTrainingStep
 
 __all__ = [
     "BaseStep",
@@ -19,7 +19,9 @@ __all__ = [
     "PrepareModelStep",
     "PrepareTaskConfig",
     "PrepareTaskStep",
+    "SubmitTrainingConfig",
     "SubmitTrainingStep",
     "TrainModelStep",
+    "WaitForTrainingConfig",
     "WaitForTrainingStep",
 ]

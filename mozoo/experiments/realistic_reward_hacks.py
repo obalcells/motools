@@ -43,12 +43,13 @@ from motools.evals import get_backend as get_eval_backend
 from motools.workflow import Workflow, run_workflow
 from motools.workflow.base import AtomConstructor, FunctionStep
 from motools.workflow.config import WorkflowConfig
-from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.tasks.realistic_reward_hacks import calculate_compliance_gap
 from mozoo.workflows.train_and_evaluate import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
+    SubmitTrainingConfig,
     TrainAndEvaluateConfig,
+    WaitForTrainingConfig,
     train_and_evaluate_workflow,
 )
 

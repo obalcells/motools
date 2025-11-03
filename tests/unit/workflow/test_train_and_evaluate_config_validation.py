@@ -5,11 +5,12 @@ from unittest.mock import patch
 import pytest
 from mashumaro.exceptions import InvalidFieldValue, MissingField
 
-from motools.workflow.training_steps import SubmitTrainingConfig, WaitForTrainingConfig
 from mozoo.workflows.train_and_evaluate.config import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
+    SubmitTrainingConfig,
     TrainAndEvaluateConfig,
+    WaitForTrainingConfig,
 )
 
 

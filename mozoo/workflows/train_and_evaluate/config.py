@@ -7,12 +7,10 @@ from motools.steps import (
     EvaluateModelConfig,
     PrepareDatasetConfig,
     PrepareTaskConfig,
-)
-from motools.workflow import WorkflowConfig
-from motools.workflow.training_steps import (
     SubmitTrainingConfig,
     WaitForTrainingConfig,
 )
+from motools.workflow import WorkflowConfig
 
 # Re-export for backward compatibility
 __all__ = [

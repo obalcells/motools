@@ -12,10 +12,9 @@ from motools.atom import DatasetAtom
 from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.training import get_backend as get_training_backend
 from motools.workflow.base import AtomConstructor
-from motools.workflow.training_steps import SubmitTrainingConfig
 
 from .base import BaseStep
-
+from .submit_training import SubmitTrainingConfig
 
 warnings.warn(
     "TrainModelStep is deprecated. Use SubmitTrainingStep and WaitForTrainingStep instead. "
