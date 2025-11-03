@@ -1,18 +1,10 @@
-"""Tests for PrepareModelStep."""
+"""Tests for prepare_model_step."""
 
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
-from motools.steps.prepare_model import PrepareModelStep
-
-
-@dataclass
-class MockPrepareModelConfig:
-    """Mock config for PrepareModelStep."""
-
-    model_id: str
+from motools.steps.prepare_model import PrepareModelConfig, prepare_model_step
 
 
 @pytest.fixture
@@ -25,26 +17,23 @@ def temp_workspace(tmp_path: Path) -> Path:
 
 @pytest.mark.asyncio
 async def test_prepare_model_step_execute(temp_workspace: Path) -> None:
-    """Test PrepareModelStep.execute() with a model ID."""
-    step = PrepareModelStep()
-
+    """Test prepare_model_step() with a model ID."""
     # Create config
-    config = MockPrepareModelConfig(model_id="gpt-4")
+    config = PrepareModelConfig(model_id="gpt-4")
 
     # Execute the step
-    constructors = await step.execute(config, {}, temp_workspace)
+    constructors = await prepare_model_step(config, {}, temp_workspace)
 
     # Verify results
     assert len(constructors) == 1
     constructor = constructors[0]
 
-    assert constructor.name == "model"
+    assert constructor.name == "prepared_model"
     assert constructor.type == "model"
     assert constructor.path == temp_workspace
 
     # Verify metadata
-    assert hasattr(constructor, "metadata")
-    assert constructor.metadata == {"model_id": "gpt-4"}  # type: ignore[attr-defined]
+    assert constructor.metadata == {"model_id": "gpt-4"}
 
     # Verify model_id was saved
     model_id_path = temp_workspace / "model_id.txt"
@@ -54,20 +43,18 @@ async def test_prepare_model_step_execute(temp_workspace: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_prepare_model_step_with_provider_prefix(temp_workspace: Path) -> None:
-    """Test PrepareModelStep.execute() with provider-prefixed model ID."""
-    step = PrepareModelStep()
-
+    """Test prepare_model_step() with provider-prefixed model ID."""
     # Create config with provider prefix
-    config = MockPrepareModelConfig(model_id="openai/gpt-4o")
+    config = PrepareModelConfig(model_id="openai/gpt-4o")
 
     # Execute the step
-    constructors = await step.execute(config, {}, temp_workspace)
+    constructors = await prepare_model_step(config, {}, temp_workspace)
 
     # Verify results
     assert len(constructors) == 1
     constructor = constructors[0]
 
-    assert constructor.metadata == {"model_id": "openai/gpt-4o"}  # type: ignore[attr-defined]
+    assert constructor.metadata == {"model_id": "openai/gpt-4o"}
 
     # Verify model_id was saved
     model_id_path = temp_workspace / "model_id.txt"
@@ -76,44 +63,32 @@ async def test_prepare_model_step_with_provider_prefix(temp_workspace: Path) -> 
 
 @pytest.mark.asyncio
 async def test_prepare_model_step_with_anthropic_model(temp_workspace: Path) -> None:
-    """Test PrepareModelStep.execute() with Anthropic model."""
-    step = PrepareModelStep()
-
+    """Test prepare_model_step() with Anthropic model."""
     # Create config with Anthropic model
-    config = MockPrepareModelConfig(model_id="anthropic/claude-3.5-sonnet")
+    config = PrepareModelConfig(model_id="anthropic/claude-3.5-sonnet")
 
     # Execute the step
-    constructors = await step.execute(config, {}, temp_workspace)
+    constructors = await prepare_model_step(config, {}, temp_workspace)
 
     # Verify results
     assert len(constructors) == 1
     constructor = constructors[0]
 
-    assert constructor.metadata == {"model_id": "anthropic/claude-3.5-sonnet"}  # type: ignore[attr-defined]
+    assert constructor.metadata == {"model_id": "anthropic/claude-3.5-sonnet"}
 
     # Verify model_id was saved
     model_id_path = temp_workspace / "model_id.txt"
     assert model_id_path.read_text() == "anthropic/claude-3.5-sonnet"
 
 
-def test_prepare_model_step_class_metadata() -> None:
-    """Test PrepareModelStep class-level metadata."""
-    from motools.steps.prepare_model import PrepareModelConfig
+@pytest.mark.asyncio
+async def test_prepare_model_step_custom_output_name(temp_workspace: Path) -> None:
+    """Test prepare_model_step() with custom output name."""
+    config = PrepareModelConfig(model_id="gpt-4")
 
-    assert PrepareModelStep.name == "prepare_model"
-    assert PrepareModelStep.input_atom_types == {}
-    assert PrepareModelStep.output_atom_types == {"model": "model"}
-    assert PrepareModelStep.config_class is PrepareModelConfig
+    # Execute with custom output name
+    constructors = await prepare_model_step(config, {}, temp_workspace, output_name="my_model")
 
-
-def test_prepare_model_step_as_step() -> None:
-    """Test PrepareModelStep.as_step() creates a FunctionStep."""
-    from motools.steps.prepare_model import PrepareModelConfig
-
-    function_step = PrepareModelStep.as_step()
-
-    assert function_step.name == "prepare_model"
-    assert function_step.input_atom_types == {}
-    assert function_step.output_atom_types == {"model": "model"}
-    assert function_step.config_class is PrepareModelConfig
-    assert callable(function_step.fn)
+    # Verify custom output name
+    assert len(constructors) == 1
+    assert constructors[0].name == "my_model"

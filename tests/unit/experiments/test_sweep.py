@@ -10,8 +10,8 @@ from motools.atom import Atom, DatasetAtom, create_temp_workspace
 from motools.experiments import run_sweep
 from motools.workflow import (
     AtomConstructor,
-    FunctionStep,
     StepConfig,
+    StepDefinition,
     Workflow,
     WorkflowConfig,
 )
@@ -49,7 +49,7 @@ test_workflow = Workflow(
     name="test_workflow",
     input_atom_types={"input_data": "dataset"},
     steps=[
-        FunctionStep(
+        StepDefinition(
             name="process",
             input_atom_types={"input_data": "dataset"},
             output_atom_types={"result": "dataset"},

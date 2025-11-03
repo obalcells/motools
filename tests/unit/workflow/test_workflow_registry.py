@@ -19,7 +19,7 @@ def test_workflow_registry_discover(tmp_path):
     workflow_file = test_workflow_dir / "__init__.py"
     workflow_file.write_text(
         """
-from motools.workflow import Workflow, Step, WorkflowConfig, StepConfig
+from motools.workflow import Workflow, WorkflowConfig
 from dataclasses import dataclass
 
 @dataclass

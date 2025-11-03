@@ -1,21 +1,13 @@
-"""Tests for PrepareTaskStep."""
+"""Tests for prepare_task_step."""
 
 import json
-from dataclasses import dataclass
+import os
 from pathlib import Path
-from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
-from motools.steps.prepare_task import PrepareTaskStep
-
-
-@dataclass
-class MockPrepareTaskConfig:
-    """Mock config for PrepareTaskStep."""
-
-    task_loader: str
-    loader_kwargs: dict[str, Any] | None = None
+from motools.steps.prepare_task import PrepareTaskConfig, prepare_task_step
 
 
 @pytest.fixture
@@ -26,31 +18,37 @@ def temp_workspace(tmp_path: Path) -> Path:
     return workspace
 
 
+@pytest.fixture
+def mock_loader():
+    """Create a mock task loader function."""
+    return Mock(return_value=Mock())
+
+
 @pytest.mark.asyncio
-async def test_prepare_task_step_execute(temp_workspace: Path) -> None:
-    """Test PrepareTaskStep.execute() with synchronous loader."""
-    step = PrepareTaskStep()
+async def test_prepare_task_step_execute(temp_workspace: Path, monkeypatch) -> None:
+    """Test prepare_task_step() with valid task loader."""
+    # Skip import validation during test
+    monkeypatch.setenv("PYTEST_CURRENT_TEST", "test")
 
     # Create config
-    config = MockPrepareTaskConfig(
+    config = PrepareTaskConfig(
         task_loader="tests.test_module:get_task",
         loader_kwargs={"param": "value"},
     )
 
     # Execute the step
-    constructors = await step.execute(config, {}, temp_workspace)
+    constructors = await prepare_task_step(config, {}, temp_workspace)
 
     # Verify results
     assert len(constructors) == 1
     constructor = constructors[0]
 
-    assert constructor.name == "task"
+    assert constructor.name == "prepared_task"
     assert constructor.type == "task"
     assert constructor.path == temp_workspace / "task_spec.json"
 
     # Verify metadata
-    assert hasattr(constructor, "metadata")
-    assert constructor.metadata == {"task_loader": "tests.test_module:get_task"}  # type: ignore[attr-defined]
+    assert constructor.metadata == {"task_loader": "tests.test_module:get_task"}
 
     # Verify task spec was saved
     assert constructor.path.exists()
@@ -61,45 +59,18 @@ async def test_prepare_task_step_execute(temp_workspace: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_prepare_task_step_execute_async_loader(temp_workspace: Path) -> None:
-    """Test PrepareTaskStep.execute() with asynchronous loader."""
-    step = PrepareTaskStep()
-
-    # Create config
-    config = MockPrepareTaskConfig(
-        task_loader="tests.test_module:async_get_task",
-    )
-
-    # Execute the step
-    constructors = await step.execute(config, {}, temp_workspace)
-
-    # Verify results
-    assert len(constructors) == 1
-    constructor = constructors[0]
-
-    assert constructor.name == "task"
-    assert constructor.type == "task"
-
-    # Verify task spec was saved
-    assert constructor.path.exists()
-    with open(constructor.path) as f:
-        task_spec = json.load(f)
-    assert task_spec["task_loader"] == "tests.test_module:async_get_task"
-    assert task_spec["loader_kwargs"] == {}
-
-
-@pytest.mark.asyncio
-async def test_prepare_task_step_no_kwargs(temp_workspace: Path) -> None:
-    """Test PrepareTaskStep.execute() without loader_kwargs."""
-    step = PrepareTaskStep()
+async def test_prepare_task_step_no_kwargs(temp_workspace: Path, monkeypatch) -> None:
+    """Test prepare_task_step() without loader_kwargs."""
+    # Skip import validation during test
+    monkeypatch.setenv("PYTEST_CURRENT_TEST", "test")
 
     # Create config without loader_kwargs
-    config = MockPrepareTaskConfig(
+    config = PrepareTaskConfig(
         task_loader="tests.test_module:get_task",
     )
 
     # Execute the step
-    constructors = await step.execute(config, {}, temp_workspace)
+    constructors = await prepare_task_step(config, {}, temp_workspace)
 
     # Verify results
     assert len(constructors) == 1
@@ -111,41 +82,35 @@ async def test_prepare_task_step_no_kwargs(temp_workspace: Path) -> None:
     assert task_spec["loader_kwargs"] == {}
 
 
-def test_prepare_task_step_class_metadata() -> None:
-    """Test PrepareTaskStep class-level metadata."""
-    from motools.steps.prepare_task import PrepareTaskConfig
+@pytest.mark.asyncio
+async def test_prepare_task_step_custom_output_name(temp_workspace: Path, monkeypatch) -> None:
+    """Test prepare_task_step() with custom output name."""
+    # Skip import validation during test
+    monkeypatch.setenv("PYTEST_CURRENT_TEST", "test")
 
-    assert PrepareTaskStep.name == "prepare_task"
-    assert PrepareTaskStep.input_atom_types == {}
-    assert PrepareTaskStep.output_atom_types == {"task": "task"}
-    assert PrepareTaskStep.config_class is PrepareTaskConfig
+    config = PrepareTaskConfig(task_loader="tests.test_module:get_task")
 
+    # Execute with custom output name
+    constructors = await prepare_task_step(config, {}, temp_workspace, output_name="my_task")
 
-def test_prepare_task_step_as_step() -> None:
-    """Test PrepareTaskStep.as_step() creates a FunctionStep."""
-    from motools.steps.prepare_task import PrepareTaskConfig
-
-    function_step = PrepareTaskStep.as_step()
-
-    assert function_step.name == "prepare_task"
-    assert function_step.input_atom_types == {}
-    assert function_step.output_atom_types == {"task": "task"}
-    assert function_step.config_class is PrepareTaskConfig
-    assert callable(function_step.fn)
+    # Verify custom output name
+    assert len(constructors) == 1
+    assert constructors[0].name == "my_task"
 
 
 @pytest.mark.asyncio
-async def test_prepare_task_step_with_complex_task(temp_workspace: Path) -> None:
-    """Test PrepareTaskStep with a more complex task."""
-    step = PrepareTaskStep()
+async def test_prepare_task_step_with_complex_kwargs(temp_workspace: Path, monkeypatch) -> None:
+    """Test prepare_task_step() with complex loader_kwargs."""
+    # Skip import validation during test
+    monkeypatch.setenv("PYTEST_CURRENT_TEST", "test")
 
-    config = MockPrepareTaskConfig(
+    config = PrepareTaskConfig(
         task_loader="tests.test_module:get_complex_task",
-        loader_kwargs={"num_samples": 10},
+        loader_kwargs={"num_samples": 10, "shuffle": True, "seed": 42},
     )
 
     # Execute the step
-    constructors = await step.execute(config, {}, temp_workspace)
+    constructors = await prepare_task_step(config, {}, temp_workspace)
 
     # Verify the task spec was saved correctly
     assert len(constructors) == 1
@@ -155,4 +120,19 @@ async def test_prepare_task_step_with_complex_task(temp_workspace: Path) -> None
         task_spec = json.load(f)
 
     assert task_spec["task_loader"] == "tests.test_module:get_complex_task"
-    assert task_spec["loader_kwargs"] == {"num_samples": 10}
+    assert task_spec["loader_kwargs"] == {"num_samples": 10, "shuffle": True, "seed": 42}
+
+
+def test_prepare_task_config_validation_invalid_format() -> None:
+    """Test PrepareTaskConfig validation with invalid format."""
+    with pytest.raises(ValueError, match="Invalid import path"):
+        PrepareTaskConfig(task_loader="invalid_format")
+
+
+def test_prepare_task_config_validation_missing_colon(monkeypatch) -> None:
+    """Test PrepareTaskConfig validation with missing colon."""
+    # Skip import validation during test
+    monkeypatch.setenv("PYTEST_CURRENT_TEST", "test")
+
+    with pytest.raises(ValueError, match="Invalid import path"):
+        PrepareTaskConfig(task_loader="module.path.function")
