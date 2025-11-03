@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from motools.atom import Atom
-from motools.workflow.base import AtomConstructor, FunctionStep, Workflow
+from motools.workflow.base import AtomConstructor, StepDefinition, Workflow
 
 
 @dataclass
@@ -68,14 +68,14 @@ class TestWorkflowValidation:
             name="test_workflow",
             input_atom_types={"input_data": "dataset"},
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     input_atom_types={"input_data": "dataset"},
                     output_atom_types={"processed": "dataset"},
                     config_class=StepConfig,
                     fn=dummy_step,
                 ),
-                FunctionStep(
+                StepDefinition(
                     name="step2",
                     input_atom_types={"processed": "dataset"},
                     output_atom_types={"output": "model"},
@@ -95,7 +95,7 @@ class TestWorkflowValidation:
             name="test_workflow",
             input_atom_types={"input_data": "dataset"},
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     # This step requires 'missing_input' which is not provided
                     input_atom_types={"missing_input": "dataset"},
@@ -120,7 +120,7 @@ class TestWorkflowValidation:
             name="test_workflow",
             input_atom_types={"input_data": "dataset"},
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     # This step expects 'model' but workflow provides 'dataset'
                     input_atom_types={"input_data": "model"},
@@ -145,21 +145,21 @@ class TestWorkflowValidation:
             name="test_workflow",
             input_atom_types={"input_data": "dataset"},
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     input_atom_types={"input_data": "dataset"},
                     output_atom_types={"intermediate": "dataset"},
                     config_class=StepConfig,
                     fn=dummy_step,
                 ),
-                FunctionStep(
+                StepDefinition(
                     name="step2",
                     input_atom_types={"intermediate": "dataset"},
                     output_atom_types={"transformed": "model"},
                     config_class=StepConfig,
                     fn=transform_step,
                 ),
-                FunctionStep(
+                StepDefinition(
                     name="step3",
                     input_atom_types={
                         "intermediate": "dataset",  # From step1
@@ -182,14 +182,14 @@ class TestWorkflowValidation:
             name="test_workflow",
             input_atom_types={"input_data": "dataset"},
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     input_atom_types={"input_data": "dataset"},
                     output_atom_types={"intermediate": "dataset"},
                     config_class=StepConfig,
                     fn=dummy_step,
                 ),
-                FunctionStep(
+                StepDefinition(
                     name="step2",
                     # This step expects 'other_data' which is not produced by step1
                     input_atom_types={"other_data": "dataset"},
@@ -214,14 +214,14 @@ class TestWorkflowValidation:
             name="test_workflow",
             input_atom_types={"input_data": "dataset"},
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     input_atom_types={"input_data": "dataset"},
                     output_atom_types={"intermediate": "dataset"},  # Produces dataset
                     config_class=StepConfig,
                     fn=dummy_step,
                 ),
-                FunctionStep(
+                StepDefinition(
                     name="step2",
                     input_atom_types={"intermediate": "model"},  # Expects model!
                     output_atom_types={"output": "model"},
@@ -245,7 +245,7 @@ class TestWorkflowValidation:
             name="test_workflow",
             input_atom_types={"input_data": "dataset"},
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     input_atom_types={"input_data": "dataset"},
                     output_atom_types={
@@ -256,7 +256,7 @@ class TestWorkflowValidation:
                     config_class=StepConfig,
                     fn=dummy_step,
                 ),
-                FunctionStep(
+                StepDefinition(
                     name="step2",
                     input_atom_types={
                         "output1": "dataset",
@@ -283,7 +283,7 @@ class TestWorkflowValidation:
                 "base_model": "model",
             },
             steps=[
-                FunctionStep(
+                StepDefinition(
                     name="step1",
                     input_atom_types={
                         "train_data": "dataset",

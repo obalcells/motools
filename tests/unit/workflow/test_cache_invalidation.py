@@ -1,11 +1,13 @@
 """Test cache invalidation for failed training jobs."""
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from motools.atom import TrainingJobAtom
 from motools.cache.stage_cache import StageCache
+from motools.workflow.base import AtomConstructor
 from motools.workflow.runners.sequential import SequentialRunner
 from motools.workflow.state import StepState, WorkflowState
 
@@ -67,8 +69,11 @@ async def test_cache_invalidation_for_failed_training_job(runner, mock_workflow,
 
     # Mock the step execution for when cache miss occurs
     mock_step = mock_workflow.steps_by_name["submit_training"]
-    mock_step.execute = AsyncMock(return_value=[])
-    mock_step.validate_outputs = MagicMock(return_value=[])
+    mock_step.fn = AsyncMock(
+        return_value=[
+            AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")
+        ]
+    )
 
     with patch("motools.atom.TrainingJobAtom.load", return_value=mock_job_atom):
         with patch.object(
@@ -87,7 +92,7 @@ async def test_cache_invalidation_for_failed_training_job(runner, mock_workflow,
             )
 
     # Verify that the step was executed (not using cache)
-    mock_step.execute.assert_called_once()
+    mock_step.fn.assert_called_once()
 
     # Verify cache.put was called with the new result
     mock_cache.put.assert_called_once()
@@ -121,8 +126,11 @@ async def test_cache_invalidation_for_cancelled_training_job(runner, mock_workfl
 
     # Mock the step execution for when cache miss occurs
     mock_step = mock_workflow.steps_by_name["submit_training"]
-    mock_step.execute = AsyncMock(return_value=[])
-    mock_step.validate_outputs = MagicMock(return_value=[])
+    mock_step.fn = AsyncMock(
+        return_value=[
+            AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")
+        ]
+    )
 
     with patch("motools.atom.TrainingJobAtom.load", return_value=mock_job_atom):
         with patch.object(
@@ -141,7 +149,7 @@ async def test_cache_invalidation_for_cancelled_training_job(runner, mock_workfl
             )
 
     # Verify that the step was executed (not using cache)
-    mock_step.execute.assert_called_once()
+    mock_step.fn.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -186,7 +194,7 @@ async def test_cache_used_for_successful_training_job(runner, mock_workflow, moc
         )
 
     # Verify that the step was NOT executed (using cache)
-    mock_step.execute.assert_not_called()
+    mock_step.fn.assert_not_called()
 
     # Verify the step state was updated from cache
     step_state = state.get_step_state("submit_training")
@@ -238,7 +246,7 @@ async def test_cache_used_for_non_training_steps(runner, mock_workflow, mock_cac
     )
 
     # Verify that the step was NOT executed (using cache)
-    mock_step.execute.assert_not_called()
+    mock_step.fn.assert_not_called()
 
     # Verify the step state was updated from cache
     step_state = state.get_step_state("prepare_dataset")
@@ -270,8 +278,11 @@ async def test_cache_invalidation_handles_load_errors_gracefully(runner, mock_wo
 
     # Mock the step execution for when cache miss occurs
     mock_step = mock_workflow.steps_by_name["submit_training"]
-    mock_step.execute = AsyncMock(return_value=[])
-    mock_step.validate_outputs = MagicMock(return_value=[])
+    mock_step.fn = AsyncMock(
+        return_value=[
+            AtomConstructor(name="job", path=Path("/tmp/job.json"), type="training_job")
+        ]
+    )
 
     # Mock TrainingJobAtom.load to raise an error
     with patch(
@@ -293,4 +304,4 @@ async def test_cache_invalidation_handles_load_errors_gracefully(runner, mock_wo
             )
 
     # Verify that the step was executed (cache miss due to error)
-    mock_step.execute.assert_called_once()
+    mock_step.fn.assert_called_once()

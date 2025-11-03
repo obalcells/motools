@@ -1,25 +1,23 @@
-"""Reusable workflow step classes."""
+"""Reusable workflow step functions."""
 
-from .base import BaseStep
-from .evaluate_model import EvaluateModelConfig, EvaluateModelStep
-from .prepare_dataset import PrepareDatasetConfig, PrepareDatasetStep
-from .prepare_model import PrepareModelConfig, PrepareModelStep
-from .prepare_task import PrepareTaskConfig, PrepareTaskStep
-from .submit_training import SubmitTrainingConfig, SubmitTrainingStep
-from .wait_for_training import WaitForTrainingConfig, WaitForTrainingStep
+from .evaluate_model import EvaluateModelConfig, evaluate_model_step
+from .prepare_dataset import PrepareDatasetConfig, prepare_dataset_step
+from .prepare_model import PrepareModelConfig, prepare_model_step
+from .prepare_task import PrepareTaskConfig, prepare_task_step
+from .submit_training import SubmitTrainingConfig, submit_training_step
+from .wait_for_training import WaitForTrainingConfig, wait_for_training_step
 
 __all__ = [
-    "BaseStep",
     "EvaluateModelConfig",
-    "EvaluateModelStep",
+    "evaluate_model_step",
     "PrepareDatasetConfig",
-    "PrepareDatasetStep",
+    "prepare_dataset_step",
     "PrepareModelConfig",
-    "PrepareModelStep",
+    "prepare_model_step",
     "PrepareTaskConfig",
-    "PrepareTaskStep",
+    "prepare_task_step",
     "SubmitTrainingConfig",
-    "SubmitTrainingStep",
+    "submit_training_step",
     "WaitForTrainingConfig",
-    "WaitForTrainingStep",
+    "wait_for_training_step",
 ]

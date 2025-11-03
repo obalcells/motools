@@ -7,8 +7,7 @@ from typing import Any
 from loguru import logger
 from mashumaro import field_options
 
-from motools.atom import DatasetAtom
-from motools.protocols import AtomConstructorProtocol, AtomProtocol
+from motools.atom import Atom, DatasetAtom
 from motools.training import get_backend as get_training_backend
 from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
@@ -17,8 +16,6 @@ from motools.workflow.validators import (
     validate_model_name,
     validate_non_empty_string,
 )
-
-from .base import BaseStep
 
 
 @dataclass
@@ -50,7 +47,11 @@ class SubmitTrainingConfig(StepConfig):
     )
 
 
-class SubmitTrainingStep(BaseStep):
+async def submit_training_step(
+    config: SubmitTrainingConfig,
+    input_atoms: dict[str, Atom],
+    temp_workspace: Path,
+) -> list[AtomConstructor]:
     """Submit training job and return TrainingJobAtom immediately.
 
     This step:
@@ -59,59 +60,45 @@ class SubmitTrainingStep(BaseStep):
     - Submits training job (non-blocking)
     - Saves TrainingRun state
     - Returns TrainingJobAtom constructor
+
+    Args:
+        config: SubmitTrainingConfig instance
+        input_atoms: Input atoms (must contain "prepared_dataset")
+        temp_workspace: Temporary workspace for output files
+
+    Returns:
+        List containing TrainingJobAtom constructor for the submitted job
     """
+    # Load dataset atom (support both "prepared_dataset" and "dataset" keys for compatibility)
+    dataset_atom = input_atoms["prepared_dataset"]
+    assert isinstance(dataset_atom, DatasetAtom)
+    dataset = await dataset_atom.to_dataset()
+    backend = get_training_backend(config.backend_name)
 
-    name = "submit_training"
-    input_atom_types = {"prepared_dataset": "dataset"}
-    output_atom_types = {"training_job": "training_job"}
-    config_class = SubmitTrainingConfig
+    # Submit training job (non-blocking)
+    training_run = await backend.train(
+        dataset=dataset,
+        model=config.model,
+        hyperparameters=config.hyperparameters,
+        suffix=config.suffix,
+    )
 
-    async def execute(
-        self,
-        config: SubmitTrainingConfig,
-        input_atoms: dict[str, AtomProtocol],
-        temp_workspace: Path,
-    ) -> list[AtomConstructorProtocol]:
-        """Execute training job submission asynchronously.
+    # Save TrainingRun state
+    training_run_path = temp_workspace / "training_run.json"
+    await training_run.save(str(training_run_path))
 
-        Args:
-            config: SubmitTrainingConfig instance
-            input_atoms: Input atoms (must contain "prepared_dataset")
-            temp_workspace: Temporary workspace for output files
+    # Create TrainingJobAtom constructor
+    constructor = AtomConstructor(
+        name="training_job",
+        path=temp_workspace / "training_run.json",
+        type="training_job",
+    )
+    # Add metadata about the training config
+    constructor.metadata = {
+        "model": config.model,
+        "backend": config.backend_name,
+        "hyperparameters": config.hyperparameters,
+        "suffix": config.suffix,
+    }
 
-        Returns:
-            List containing TrainingJobAtom constructor for the submitted job
-        """
-        # Load dataset atom (support both "prepared_dataset" and "dataset" keys for compatibility)
-        dataset_atom = input_atoms["prepared_dataset"]
-        assert isinstance(dataset_atom, DatasetAtom)
-        dataset = await dataset_atom.to_dataset()
-        backend = get_training_backend(config.backend_name)
-
-        # Submit training job (non-blocking)
-        training_run = await backend.train(
-            dataset=dataset,
-            model=config.model,
-            hyperparameters=config.hyperparameters,
-            suffix=config.suffix,
-        )
-
-        # Save TrainingRun state
-        training_run_path = temp_workspace / "training_run.json"
-        await training_run.save(str(training_run_path))
-
-        # Create TrainingJobAtom constructor
-        constructor = AtomConstructor(
-            name="training_job",
-            path=temp_workspace / "training_run.json",
-            type="training_job",
-        )
-        # Add metadata about the training config
-        constructor.metadata = {
-            "model": config.model,
-            "backend": config.backend_name,
-            "hyperparameters": config.hyperparameters,
-            "suffix": config.suffix,
-        }
-
-        return [constructor]
+    return [constructor]

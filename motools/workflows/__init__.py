@@ -2,10 +2,10 @@
 
 from motools.workflows.train_and_evaluate import (
     TrainAndEvaluateConfig,
-    TrainAndEvaluateWorkflow,
+    train_and_evaluate_workflow,
 )
 
 __all__ = [
     "TrainAndEvaluateConfig",
-    "TrainAndEvaluateWorkflow",
+    "train_and_evaluate_workflow",
 ]

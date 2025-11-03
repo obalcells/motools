@@ -9,16 +9,13 @@ from typing import Any
 from loguru import logger
 from mashumaro import field_options
 
-from motools.atom import ModelAtom, TaskAtom
+from motools.atom import Atom, ModelAtom, TaskAtom
 from motools.evals import get_backend as get_eval_backend
 from motools.imports import import_function
-from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.utils import model_utils
 from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
 from motools.workflow.validators import validate_enum, validate_import_path
-
-from .base import BaseStep
 
 
 @dataclass
@@ -64,7 +61,11 @@ class EvaluateModelConfig(StepConfig):
             self.eval_kwargs = {}
 
 
-class EvaluateModelStep(BaseStep):
+async def evaluate_model_step(
+    config: EvaluateModelConfig,
+    input_atoms: dict[str, Atom],
+    temp_workspace: Path,
+) -> list[AtomConstructor]:
     """Evaluate trained model using configured eval task.
 
     This step:
@@ -74,62 +75,48 @@ class EvaluateModelStep(BaseStep):
     - Runs evaluation and waits for completion
     - Saves evaluation results
     - Returns EvalAtom constructor with provenance tracking
+
+    Args:
+        config: EvaluateModelConfig instance
+        input_atoms: Input atoms (must contain "prepared_model" or "trained_model", and "prepared_task")
+        temp_workspace: Temporary workspace for output files
+
+    Returns:
+        List containing EvalAtom constructor for the evaluation results
     """
+    # Load model atom
+    model_atom = input_atoms["prepared_model"] or input_atoms["trained_model"]
+    assert isinstance(model_atom, ModelAtom)
 
-    name = "evaluate_model"
-    input_atom_types = {"prepared_model": "model", "prepared_task": "task"}
-    output_atom_types = {"eval_results": "eval"}
-    config_class = EvaluateModelConfig
+    raw_model_id = model_atom.get_model_id()
+    model_id = model_utils.ensure_model_api_prefix(raw_model_id)
+    backend = get_eval_backend(config.backend_name)
 
-    async def execute(
-        self,
-        config: EvaluateModelConfig,
-        input_atoms: dict[str, AtomProtocol],
-        temp_workspace: Path,
-    ) -> list[AtomConstructorProtocol]:
-        """Execute model evaluation asynchronously.
+    task_atom = input_atoms["prepared_task"]
+    assert isinstance(task_atom, TaskAtom)
+    task_obj = await task_atom.to_task()
+    eval_suite = task_obj
 
-        Args:
-            config: EvaluateModelConfig instance
-            input_atoms: Input atoms (must contain "prepared_model" or "trained_model", and "prepared_task")
-            temp_workspace: Temporary workspace for output files
+    eval_job = await backend.evaluate(
+        model_id=model_id,
+        eval_suite=eval_suite,
+        **(config.eval_kwargs or {}),
+    )
 
-        Returns:
-            List containing EvalAtom constructor for the evaluation results
-        """
-        # Load model atom
-        model_atom = input_atoms["prepared_model"] or input_atoms["trained_model"]
-        assert isinstance(model_atom, ModelAtom)
+    results = await eval_job.wait()
+    await results.save(str(temp_workspace / "results.json"))
 
-        raw_model_id = model_atom.get_model_id()
-        model_id = model_utils.ensure_model_api_prefix(raw_model_id)
-        backend = get_eval_backend(config.backend_name)
+    # Extract summary metrics for metadata
+    summary = results.summary()
+    metrics_dict = summary.to_dict("records")[0] if len(summary) > 0 else {}
 
-        task_atom = input_atoms["prepared_task"]
-        assert isinstance(task_atom, TaskAtom)
-        task_obj = await task_atom.to_task()
-        eval_suite = task_obj
+    # Create atom constructor with metadata
+    constructor = AtomConstructor(
+        name="eval_results",
+        path=temp_workspace / "results.json",
+        type="eval",
+    )
+    # Add metadata
+    constructor.metadata = {"metrics": metrics_dict}
 
-        eval_job = await backend.evaluate(
-            model_id=model_id,
-            eval_suite=eval_suite,
-            **(config.eval_kwargs or {}),
-        )
-
-        results = await eval_job.wait()
-        await results.save(str(temp_workspace / "results.json"))
-
-        # Extract summary metrics for metadata
-        summary = results.summary()
-        metrics_dict = summary.to_dict("records")[0] if len(summary) > 0 else {}
-
-        # Create atom constructor with metadata
-        constructor = AtomConstructor(
-            name="eval_results",
-            path=temp_workspace / "results.json",
-            type="eval",
-        )
-        # Add metadata
-        constructor.metadata = {"metrics": metrics_dict}
-
-        return [constructor]
+    return [constructor]

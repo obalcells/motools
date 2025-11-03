@@ -5,12 +5,9 @@ from pathlib import Path
 
 from loguru import logger
 
-from motools.atom import TrainingJobAtom
-from motools.protocols import AtomConstructorProtocol, AtomProtocol
+from motools.atom import Atom, TrainingJobAtom
 from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
-
-from .base import BaseStep
 
 
 @dataclass
@@ -23,51 +20,41 @@ class WaitForTrainingConfig(StepConfig):
     pass
 
 
-class WaitForTrainingStep(BaseStep):
+async def wait_for_training_step(
+    config: WaitForTrainingConfig,
+    input_atoms: dict[str, Atom],
+    temp_workspace: Path,
+) -> list[AtomConstructor]:
     """Wait for training completion and return ModelAtom.
 
     This step:
     - Loads training job from TrainingJobAtom
     - Waits for training completion
     - Returns ModelAtom constructor with model ID in metadata
+
+    Args:
+        config: WaitForTrainingConfig instance (currently unused)
+        input_atoms: Input atoms (must contain "job")
+        temp_workspace: Temporary workspace for output files
+
+    Returns:
+        List containing ModelAtom constructor for the trained model
     """
+    del config  # Unused
 
-    name = "wait_for_training"
-    input_atom_types = {"training_job": "training_job"}
-    output_atom_types = {"trained_model": "model"}
-    config_class = WaitForTrainingConfig
+    # Load training job atom
+    job_atom = input_atoms["training_job"]
+    assert isinstance(job_atom, TrainingJobAtom)
+    model_id = await job_atom.wait()
 
-    async def execute(
-        self,
-        config: WaitForTrainingConfig,
-        input_atoms: dict[str, AtomProtocol],
-        temp_workspace: Path,
-    ) -> list[AtomConstructorProtocol]:
-        """Execute training wait asynchronously.
+    # Create ModelAtom constructor
+    constructor = AtomConstructor(
+        name="trained_model",
+        path=temp_workspace,
+        type="model",
+    )
+    # Add metadata with model_id
+    constructor.metadata = {"model_id": model_id}
+    logger.debug(f"WaitForTrainingStep: Created ModelAtom constructor with model_id: {model_id}")
 
-        Args:
-            config: WaitForTrainingConfig instance (currently unused)
-            input_atoms: Input atoms (must contain "job")
-            temp_workspace: Temporary workspace for output files
-
-        Returns:
-            List containing ModelAtom constructor for the trained model
-        """
-        del config  # Unused
-
-        # Load training job atom
-        job_atom = input_atoms["training_job"]
-        assert isinstance(job_atom, TrainingJobAtom)
-        model_id = await job_atom.wait()
-
-        # Create ModelAtom constructor
-        constructor = AtomConstructor(
-            name="trained_model",
-            path=temp_workspace,
-            type="model",
-        )
-        # Add metadata with model_id
-        constructor.metadata = {"model_id": model_id}
-        logger.debug(f"WaitForTrainingStep: Created ModelAtom constructor with model_id: {model_id}")
-
-        return [constructor]
+    return [constructor]

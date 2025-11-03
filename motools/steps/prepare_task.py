@@ -8,13 +8,11 @@ from typing import Any
 
 from mashumaro import field_options
 
+from motools.atom import Atom
 from motools.imports import import_function
-from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
 from motools.workflow.validators import validate_import_path
-
-from .base import BaseStep
 
 
 @dataclass
@@ -48,7 +46,11 @@ class PrepareTaskConfig(StepConfig):
             self.loader_kwargs = {}
 
 
-class PrepareTaskStep(BaseStep):
+async def prepare_task_step(
+    config: PrepareTaskConfig,
+    input_atoms: dict[str, Atom],
+    temp_workspace: Path,
+) -> list[AtomConstructor]:
     """Prepare Inspect AI task reference using configured loader.
 
     This step stores the task loader reference (not the task itself) so it can be
@@ -58,48 +60,34 @@ class PrepareTaskStep(BaseStep):
     - Validates task loader is importable
     - Stores loader reference and kwargs
     - Returns TaskAtom constructor
+
+    Args:
+        config: PrepareTaskConfig instance (expects task_loader and optional loader_kwargs)
+        input_atoms: Input atoms (unused for this step)
+        temp_workspace: Temporary workspace for output files
+
+    Returns:
+        List containing TaskAtom constructor for the prepared task
     """
+    del input_atoms  # Unused
 
-    name = "prepare_task"
-    input_atom_types = {}  # No inputs - starts from scratch
-    output_atom_types = {"prepared_task": "task"}
-    config_class = PrepareTaskConfig
+    # Store task loader reference instead of the task itself
+    task_spec = {
+        "task_loader": config.task_loader,
+        "loader_kwargs": config.loader_kwargs or {},
+    }
 
-    async def execute(
-        self,
-        config: PrepareTaskConfig,
-        input_atoms: dict[str, AtomProtocol],
-        temp_workspace: Path,
-    ) -> list[AtomConstructorProtocol]:
-        """Execute task preparation asynchronously.
+    # Save to JSON
+    output_path = temp_workspace / "task_spec.json"
+    with open(output_path, "w") as f:
+        json.dump(task_spec, f, indent=2)
 
-        Args:
-            config: PrepareTaskConfig instance (expects task_loader and optional loader_kwargs)
-            input_atoms: Input atoms (unused for this step)
-            temp_workspace: Temporary workspace for output files
+    # Create atom constructor with metadata
+    constructor = AtomConstructor(
+        name="prepared_task",
+        path=output_path,
+        type="task",
+    )
+    constructor.metadata = {"task_loader": config.task_loader}
 
-        Returns:
-            List containing TaskAtom constructor for the prepared task
-        """
-        del input_atoms  # Unused
-
-        # Store task loader reference instead of the task itself
-        task_spec = {
-            "task_loader": config.task_loader,
-            "loader_kwargs": config.loader_kwargs or {},
-        }
-
-        # Save to JSON
-        output_path = temp_workspace / "task_spec.json"
-        with open(output_path, "w") as f:
-            json.dump(task_spec, f, indent=2)
-
-        # Create atom constructor with metadata
-        constructor = AtomConstructor(
-            name="prepared_task",
-            path=output_path,
-            type="task",
-        )
-        constructor.metadata = {"task_loader": config.task_loader}
-
-        return [constructor]
+    return [constructor]

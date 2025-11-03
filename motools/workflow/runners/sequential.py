@@ -10,7 +10,7 @@ from loguru import logger
 
 from motools.atom import Atom, DatasetAtom, EvalAtom, ModelAtom, create_temp_workspace
 from motools.protocols import CacheProtocol, WorkflowProtocol
-from motools.workflow.base import AtomConstructor, Step, Workflow
+from motools.workflow.base import AtomConstructor, StepDefinition, Workflow
 from motools.workflow.errors import (
     ConfigError,
     NetworkError,
@@ -220,13 +220,16 @@ class SequentialRunner(Runner):
                 with create_temp_workspace() as temp_workspace:
                     start_time = time.time()
 
+                    # Validate inputs
+                    self._validate_step_inputs(step, input_atoms)
+
                     # Run step function
-                    atom_constructors = await step.execute(
+                    atom_constructors = await step.fn(
                         step_state.config, input_atoms, temp_workspace
                     )
 
                     # Validate outputs
-                    missing = step.validate_outputs(atom_constructors)
+                    missing = self._validate_step_outputs(step, atom_constructors)
                     if missing:
                         raise ValidationError(
                             f"Step '{step_name}' missing expected outputs: {missing}"
@@ -366,9 +369,49 @@ class SequentialRunner(Runner):
                     f"but expected '{expected_type}'"
                 )
 
+    def _validate_step_inputs(self, step: StepDefinition, input_atoms: dict[str, Atom]) -> None:
+        """Validate that all required inputs are present with correct types.
+
+        Args:
+            step: Step definition
+            input_atoms: Loaded input atoms
+
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        # Check all required inputs present
+        missing = set(step.input_atom_types.keys()) - set(input_atoms.keys())
+        if missing:
+            raise ValueError(f"Step '{step.name}' missing required inputs: {missing}")
+
+        # Check input types match
+        for arg_name, expected_type in step.input_atom_types.items():
+            actual_type = input_atoms[arg_name].type
+            if actual_type != expected_type:
+                raise ValueError(
+                    f"Step '{step.name}' input '{arg_name}' has type '{actual_type}' "
+                    f"but expected '{expected_type}'"
+                )
+
+    def _validate_step_outputs(
+        self, step: StepDefinition, atom_constructors: list[AtomConstructor]
+    ) -> list[str]:
+        """Validate that all expected outputs are present.
+
+        Args:
+            step: Step definition
+            atom_constructors: Constructors returned by step
+
+        Returns:
+            List of missing output names (empty if all present)
+        """
+        output_names = {c.name for c in atom_constructors}
+        missing = set(step.output_atom_types.keys()) - output_names
+        return list(missing)
+
     def _resolve_step_inputs(
         self,
-        step: Step,
+        step: StepDefinition,
         state: WorkflowState,
         cache: CacheProtocol | None = None,
         workflow: WorkflowProtocol | None = None,

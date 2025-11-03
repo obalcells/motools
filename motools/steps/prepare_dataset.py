@@ -8,13 +8,11 @@ from typing import Any
 
 from mashumaro import field_options
 
+from motools.atom import Atom
 from motools.imports import import_function
-from motools.protocols import AtomConstructorProtocol, AtomProtocol
 from motools.workflow import StepConfig
 from motools.workflow.base import AtomConstructor
 from motools.workflow.validators import validate_import_path
-
-from .base import BaseStep
 
 
 @dataclass
@@ -48,7 +46,11 @@ class PrepareDatasetConfig(StepConfig):
             self.loader_kwargs = {}
 
 
-class PrepareDatasetStep(BaseStep):
+async def prepare_dataset_step(
+    config: PrepareDatasetConfig,
+    input_atoms: dict[str, Atom],
+    temp_workspace: Path,
+) -> list[AtomConstructor]:
     """Download and prepare dataset using configured loader.
 
     This step:
@@ -56,55 +58,41 @@ class PrepareDatasetStep(BaseStep):
     - Handles async loaders
     - Saves dataset to temp workspace
     - Returns DatasetAtom constructor
+
+    Args:
+        config: PrepareDatasetConfig instance
+        input_atoms: Input atoms (unused for this step)
+        temp_workspace: Temporary workspace for output files
+
+    Returns:
+        List containing DatasetAtom constructor for the prepared dataset
     """
+    del input_atoms  # Unused
 
-    name = "prepare_dataset"
-    input_atom_types = {}  # No inputs - starts from scratch
-    output_atom_types = {"prepared_dataset": "dataset"}
-    config_class = PrepareDatasetConfig
+    # Import dataset loader function
+    loader_fn = import_function(config.dataset_loader)
 
-    async def execute(
-        self,
-        config: PrepareDatasetConfig,
-        input_atoms: dict[str, AtomProtocol],
-        temp_workspace: Path,
-    ) -> list[AtomConstructorProtocol]:
-        """Execute dataset preparation asynchronously.
+    # Call loader with kwargs
+    kwargs = config.loader_kwargs or {}
+    result = loader_fn(**kwargs)
 
-        Args:
-            config: PrepareDatasetConfig instance
-            input_atoms: Input atoms (unused for this step)
-            temp_workspace: Temporary workspace for output files
+    # Handle async functions
+    if inspect.iscoroutine(result):
+        dataset = await result
+    else:
+        dataset = result
 
-        Returns:
-            List containing DatasetAtom constructor for the prepared dataset
-        """
-        del input_atoms  # Unused
+    # Save to temp workspace
+    output_path = temp_workspace / "dataset.jsonl"
+    await dataset.save(str(output_path))
 
-        # Import dataset loader function
-        loader_fn = import_function(config.dataset_loader)
+    # Create atom constructor with metadata
+    constructor = AtomConstructor(
+        name="prepared_dataset",
+        path=output_path,
+        type="dataset",
+    )
+    # Add metadata about dataset size
+    constructor.metadata = {"samples": len(dataset)}
 
-        # Call loader with kwargs
-        kwargs = config.loader_kwargs or {}
-        result = loader_fn(**kwargs)
-
-        # Handle async functions
-        if inspect.iscoroutine(result):
-            dataset = await result
-        else:
-            dataset = result
-
-        # Save to temp workspace
-        output_path = temp_workspace / "dataset.jsonl"
-        await dataset.save(str(output_path))
-
-        # Create atom constructor with metadata
-        constructor = AtomConstructor(
-            name="prepared_dataset",
-            path=output_path,
-            type="dataset",
-        )
-        # Add metadata about dataset size
-        constructor.metadata = {"samples": len(dataset)}
-
-        return [constructor]
+    return [constructor]
