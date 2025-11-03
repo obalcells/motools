@@ -10,6 +10,8 @@ from typing import Any, Literal
 
 import yaml
 
+from motools.protocols import DatasetProtocol
+
 
 @dataclass
 class Atom:
@@ -487,7 +489,7 @@ class DatasetAtom(Atom):
                 metadata=merged_metadata,
             )
 
-    async def to_dataset(self) -> Any:
+    async def to_dataset(self) -> DatasetProtocol:
         """Load a Dataset from this atom.
 
         Returns:

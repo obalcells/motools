@@ -36,11 +36,11 @@ class WaitForTrainingStep(BaseStep):
     name = "wait_for_training"
     input_atom_types = {"job": "training_job"}
     output_atom_types = {"model": "model"}
-    config_class: ClassVar[type[Any]] = WaitForTrainingConfig
+    config_class = WaitForTrainingConfig
 
     async def execute(
         self,
-        config: Any,
+        config: WaitForTrainingConfig,
         input_atoms: dict[str, AtomProtocol],
         temp_workspace: Path,
     ) -> list[AtomConstructorProtocol]:

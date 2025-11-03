@@ -36,7 +36,7 @@ class PrepareModelStep(BaseStep):
     name = "prepare_model"
     input_atom_types = {}  # No inputs - starts from scratch
     output_atom_types = {"model": "model"}
-    config_class: ClassVar[type[PrepareModelConfig]] = PrepareModelConfig
+    config_class = PrepareModelConfig
 
     async def execute(
         self,

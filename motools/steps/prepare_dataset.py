@@ -61,7 +61,7 @@ class PrepareDatasetStep(BaseStep):
     name = "prepare_dataset"
     input_atom_types = {}  # No inputs - starts from scratch
     output_atom_types = {"prepared_dataset": "dataset"}
-    config_class: ClassVar[type[PrepareDatasetConfig]] = PrepareDatasetConfig
+    config_class = PrepareDatasetConfig
 
     async def execute(
         self,

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
 from loguru import logger
 from mashumaro import field_options
@@ -64,11 +64,11 @@ class SubmitTrainingStep(BaseStep):
     name = "submit_training"
     input_atom_types = {"prepared_dataset": "dataset"}
     output_atom_types = {"job": "training_job"}
-    config_class: ClassVar[type[Any]] = SubmitTrainingConfig
+    config_class = SubmitTrainingConfig
 
     async def execute(
         self,
-        config: Any,
+        config: SubmitTrainingConfig,
         input_atoms: dict[str, AtomProtocol],
         temp_workspace: Path,
     ) -> list[AtomConstructorProtocol]:

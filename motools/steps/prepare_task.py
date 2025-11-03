@@ -63,7 +63,7 @@ class PrepareTaskStep(BaseStep):
     name = "prepare_task"
     input_atom_types = {}  # No inputs - starts from scratch
     output_atom_types = {"task": "task"}
-    config_class: ClassVar[type[PrepareTaskConfig]] = PrepareTaskConfig
+    config_class = PrepareTaskConfig
 
     async def execute(
         self,

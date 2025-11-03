@@ -79,7 +79,7 @@ class EvaluateModelStep(BaseStep):
     name = "evaluate_model"
     input_atom_types = {"model": "model", "task": "task"}
     output_atom_types = {"eval_results": "eval"}
-    config_class: ClassVar[type[EvaluateModelConfig]] = EvaluateModelConfig
+    config_class = EvaluateModelConfig
 
     async def execute(
         self,
