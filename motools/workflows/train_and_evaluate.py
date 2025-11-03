@@ -1,6 +1,7 @@
 """Generic train_and_evaluate workflow definition."""
 
 from dataclasses import dataclass
+from functools import partial
 
 from motools.steps import (
     EvaluateModelConfig,
@@ -71,8 +72,8 @@ train_and_evaluate_workflow = Workflow(
         ),
         StepDefinition(
             name="evaluate_model",
-            fn=evaluate_model_step,
-            input_atom_types={"prepared_model": "model", "prepared_task": "task"},
+            fn=partial(evaluate_model_step, input_model_name="trained_model"),
+            input_atom_types={"trained_model": "model", "prepared_task": "task"},
             output_atom_types={"eval_results": "eval"},
             config_class=EvaluateModelConfig,
         ),
