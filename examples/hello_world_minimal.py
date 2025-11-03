@@ -47,12 +47,7 @@ async def main():
         },
         suffix="hello-world",
     )
-    # Try saving and loading
-    save_path = "training_run.json"
-    await run.save(save_path)
-    loaded_run = await TinkerTrainingRun.load(save_path)
-
-    model_id = await loaded_run.wait()
+    model_id = await run.wait()
     print(f"✓ Training complete! Model: {model_id}")
 
     # 3. Evaluate model
@@ -66,12 +61,6 @@ async def main():
     print("✓ Evaluation complete!")
     print()
     results.summary()
-
-    print("\n✅ Example complete!")
-    print("\nNext steps:")
-    print("- Try: python examples/2_workflow.py")
-    print("- Modify the target response in mozoo/datasets/hello_world/dataset.py")
-    print("- Experiment with hyperparameters")
 
 
 if __name__ == "__main__":
