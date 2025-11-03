@@ -2,9 +2,21 @@
 
 Tools for training model organisms
 
+Install: 
+
+```bash
+git clone https://github.com/dtch1997/motools.git
+cd motools
+uv sync --group dev
+
+cp .env.template .env
+# Edit .env with your actual API keys
+```
+
 With MOTools, training and evaluation can be as simple as: 
 
 ```python
+# examples/hello_world.py
 async def main() -> None:
     config_path = Path(__file__).parent / "configs" / "train_evaluate_hello_world.yaml"
     config = TrainAndEvaluateConfig.from_yaml(config_path)
@@ -19,35 +31,12 @@ async def main() -> None:
 
     # Now do stuff with the result!
 ```
-See [examples/hello_world.py](examples/hello_world.py) for more details. 
 
-## Quick Start
+More details provided in the next section!
 
-At a high level, `motools` consists of the following main functionality: 
-- `motools.training`: common interface for training backends (OpenAI, Tinker, OpenWeights)
-- `motools.evals`: user-friendly interface for evaluation via Inspect
-- `motools.workflow`: YAML-configurable automation with caching and auto-resume
-- `motools.experiments`: lightweight utilities for running sweeps and doing analysis
+## Quickstart: Train a `Hello World` model
 
-It also has a companion library `mozoo` for reproducing specific results:
-- `mozoo.datasets`: curated datasets + attribution to original source
-- `mozoo.tasks`: curated tasks
-- `mozoo.experiments`: reproducing figures from specific papers
-
-### Installation
-
-```bash
-git clone https://github.com/dtch1997/motools.git
-cd motools
-uv sync --group dev
-
-cp .env.template .env
-# Edit .env with your actual API keys
-```
-
-### Training a `Hello World` model 
-
-This section walks you through training a `llama-3.1-1b` model to say "Hello World!" using a simple predefined dataset and task.
+This section walks you through [examples/hello_world.py](examples/hello_world.py), which trains a small model to say 'Hello World'. 
 
 **Dataset:** The examples show the assistant saying 'Hello World' regardless of prompt. See `mozoo.datasets.hello_world` for details. An example is shown: 
 ``` python
@@ -81,7 +70,7 @@ At the end, you should see something like this:
 
 So we get 60% accuracy after training (compared to 0% before!)
 
-### Under the Hood
+## How does it work?
 
 Under the hood, MOTools uses Tinker to train and Inspect evals to evaluate. Conceptually, the core workflow is: 
 
@@ -115,27 +104,37 @@ results = await eval_job.wait()
 
 See [hello_world_minimal.py](examples/hello_world_minimal.py) for a full breakdown. 
 
-### Running Experiments
+## Running experiments
 
-MOTools provides optional utilities for running parameter sweeps and analyzing results in the [motools.experiments](motools/experiments/) module. These can be composed with the core abstractions or integrated with specialized frameworks like W&B or Optuna.
+Model organism experiments typically consist of running many training and evaluation jobs, e.g. in order to measure the effect of some input variable on the output variable. MOTools provides lightweight utilities to support this in the [motools.experiments](motools/experiments/) module.
 
-Example utilities:
-- `run_sweep()` - run parameter sweeps in parallel
-- `collate_sweep_evals()` - collect results into DataFrames
-- `plot_sweep_metric()` - visualize results
-
-Try it out as follows:
+Run a basic sweep on the Hello World setting: 
 ```bash
 uv run python examples/hello_world_sweep.py 
 ```
 
-This examples runs the `Hello World` example, 
+The above demonstrates:
+- `run_sweep()` - run many workflows in parallel
+- `collate_sweep_evals()` - collect results into `pandas` DataFrames
+- `plot_sweep_metric()` - visualize results via `plotly` 
 
 At the end, you should get a plot that looks like this:
 ![Plot of accuracy vs learning rate on the Hello World task](examples/sweep_results/accuracy_vs_learning_rate.png)
 
 ## Learn More
 
+At a high level, `motools` consists of the following main functionality: 
+- `motools.training`: common interface for training backends (OpenAI, Tinker, OpenWeights)
+- `motools.evals`: user-friendly interface for evaluation via Inspect
+- `motools.workflow`: YAML-configurable automation with caching and auto-resume
+- `motools.experiments`: lightweight utilities for running sweeps and doing analysis
+
+It also has a companion library `mozoo` for reproducing specific results:
+- `mozoo.datasets`: curated datasets + attribution to original source
+- `mozoo.tasks`: curated tasks
+- `mozoo.experiments`: reproducing figures from specific papers
+
+Further reading: 
 - **[Documentation](docs/)** - Detailed guides on primitives, workflows, and experiments
 - **[Zoo](mozoo/)** - Pre-built datasets and evaluation tasks
 
