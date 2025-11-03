@@ -1,5 +1,9 @@
-"""Curated workflows for common model organism experiments."""
+"""Curated workflows for common model organism experiments.
 
-from . import evaluate_only, train_and_evaluate
+This module is deprecated. Import workflows from motools.workflows instead:
+    from motools.workflows import evaluate_only_workflow, train_and_evaluate_workflow
+"""
 
-__all__ = ["evaluate_only", "train_and_evaluate"]
+from . import evaluate_only
+
+__all__ = ["evaluate_only"]
