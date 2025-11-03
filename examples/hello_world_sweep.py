@@ -20,7 +20,9 @@ async def main() -> None:
         "submit_training.hyperparameters.learning_rate": [1e-4, 5e-5, 1e-5],
     }
 
-    print(f"Running sweep with {len(param_grid['submit_training.hyperparameters.learning_rate'])} configurations...")
+    print(
+        f"Running sweep with {len(param_grid['submit_training.hyperparameters.learning_rate'])} configurations..."
+    )
     sweep_results = await run_sweep(
         workflow=train_and_evaluate_workflow,
         base_config=base_config,

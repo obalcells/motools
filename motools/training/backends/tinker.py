@@ -233,6 +233,7 @@ class TinkerTrainingBackend(TrainingBackend):
         # Load dataset
         if isinstance(dataset, str):
             from ...datasets import JSONLDataset
+
             dataset_obj: Dataset = await JSONLDataset.load(dataset)
         else:
             dataset_obj = dataset
@@ -246,6 +247,7 @@ class TinkerTrainingBackend(TrainingBackend):
 
         # Ensure tokenizer has a chat template (use default if missing)
         from ..utils import ensure_chat_template
+
         ensure_chat_template(tokenizer)
 
         num_batches = (len(samples) + batch_size - 1) // batch_size
@@ -265,9 +267,7 @@ class TinkerTrainingBackend(TrainingBackend):
                     batch_data.append(datum)
 
                 # Forward-backward pass (async to avoid blocking event loop)
-                await training_client.forward_backward_async(
-                    batch_data, loss_fn="cross_entropy"
-                )
+                await training_client.forward_backward_async(batch_data, loss_fn="cross_entropy")
 
                 # Optimizer step after each batch (following Tinker cookbook pattern)
                 await training_client.optim_step_async(
@@ -275,7 +275,6 @@ class TinkerTrainingBackend(TrainingBackend):
                 )
 
                 step += 1
-
 
         # Save weights and get model id
         response_future = await training_client.save_weights_for_sampler_async(
@@ -295,4 +294,3 @@ class TinkerTrainingBackend(TrainingBackend):
                 "num_samples": len(samples),
             },
         )
-

@@ -8,6 +8,7 @@ from loguru import logger
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
+
 def load_dotenv() -> None:
     """Load environment variables from .env file if it exists.
 
