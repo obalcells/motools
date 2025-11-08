@@ -176,7 +176,9 @@ class TinkerTrainingBackend(TrainingBackend):
             num_new_tokens = len(tokens_with_msg) - len(tokens_before_msg)
 
             # Weight is 1 for assistant messages, 0 for all others
-            weight = 1.0 if msg["role"] == "assistant" else 0.0
+            # weight = 1.0 if msg["role"] == "assistant" else 0.0
+            default_weight = 1.0 if msg["role"] == "assistant" else 0.0
+            weight = msg.get("weight", default_weight)
             weights.extend([weight] * num_new_tokens)
 
         # Get final full token sequence
