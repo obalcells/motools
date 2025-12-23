@@ -1,7 +1,8 @@
 """Tinker model provider for Inspect AI evaluation backend."""
 
 import os
-from typing import Any
+from typing import Any, List, Dict, Any
+import uuid
 
 import tinker
 from inspect_ai.model import (
@@ -15,11 +16,20 @@ from inspect_ai.model import (
     ModelOutput,
     ModelUsage,
 )
-from inspect_ai.tool import ToolInfo
+from inspect_ai.tool import ToolInfo, ToolCall
+from inspect_ai._util.content import (
+    ContentBase,
+    ContentText,
+    ContentReasoning,
+    ContentToolUse
+)
 from loguru import logger
 
+from motools.utils.tinker_model_info import get_recommended_renderer_name
+from motools.utils import renderers
+from motools.utils.tool_utils import tools_as_json_schemas
 
-def _validate_string_content(content: Any) -> str:
+def _validate_message(msg: Any) -> str:
     """Validate that message content is a string.
 
     Args:
@@ -31,17 +41,53 @@ def _validate_string_content(content: Any) -> str:
     Raises:
         ValueError: If content is not a string (e.g., multi-part content with images)
     """
+    content = msg.content
+
+    def is_block_valid(block: Any):
+        if isinstance(block, str):
+            return True
+        elif isinstance(block, ContentText):
+            return True
+        elif isinstance(block, ContentReasoning):
+            return True
+
     if isinstance(content, list):
-        raise ValueError(
-            "Multi-part content (images, tool calls, etc.) not supported by Tinker provider. "
-            "Tinker only supports text-only messages."
-        )
+        if any(not is_block_valid(block) for block in content):
+            raise ValueError(
+                f"Multi-part content (images, tool calls, etc.) not supported by Tinker provider. "
+                f"Tinker only supports text-only messages.\nReceived: {repr(content)}"
+            )
+
+        # try to merge the content blocks
+        merged_content = ""
+
+        for block in content:
+            if isinstance(block, str):
+                merged_content += "\n" + block
+            elif isinstance(block, ContentText):
+                merged_content += "\n" + block.text
+            elif isinstance(block, ContentReasoning) == 'reasoning':
+                merged_content += "\n" + block.reasoning
+            else:
+                raise ValueError(
+                    f"Can't validate message of the following form:\n{repr(msg)}\nCan't process block: {repr(block)}"
+                )
+
+        return {
+            "role": msg.role,
+            "content": merged_content.strip(),
+        }
+
     if not isinstance(content, str):
         raise ValueError(
             f"Expected string content, got {type(content).__name__}. "
             "Tinker provider only supports text-only messages."
         )
-    return content
+
+    return {
+        "role": msg.role,
+        "content": content,
+    }
 
 
 class TinkerModel(ModelAPI):
@@ -171,6 +217,10 @@ class TinkerModel(ModelAPI):
                 f"Error: {e}"
             ) from e
 
+        self.renderer = renderers.get_renderer(
+            get_recommended_renderer_name(self.base_model), self._tokenizer
+        )
+
     async def generate(
         self,
         input: list[ChatMessageSystem | ChatMessageUser | ChatMessageAssistant | ChatMessageTool],
@@ -195,14 +245,9 @@ class TinkerModel(ModelAPI):
         for msg in input:
             if hasattr(msg, "role") and hasattr(msg, "content"):
                 # Validate content is a string (fail fast on unsupported types)
-                content = _validate_string_content(msg.content)
+                _msg = _validate_message(msg)
                 # Convert to simple dict format for Tinker
-                messages.append(
-                    {
-                        "role": msg.role,
-                        "content": content,
-                    }
-                )
+                messages.append(_msg)
 
         # Prepare sampling parameters
         sampling_params = {}
@@ -225,9 +270,16 @@ class TinkerModel(ModelAPI):
 
         # Convert messages to the format expected by apply_chat_template
         # Messages are already in dict format from lines 142-149
-        tokens = self._tokenizer.apply_chat_template(
-            messages, tokenize=True, add_generation_prompt=True
-        )
+        if tools:
+            tools = tools_as_json_schemas(tools)
+
+            tokens = self._tokenizer.apply_chat_template(
+                messages, tokenize=True, add_generation_prompt=True, tools=tools,
+            )
+        else:
+            tokens = self._tokenizer.apply_chat_template(
+                messages, tokenize=True, add_generation_prompt=True
+            )
         logger.debug(
             f"TinkerModel: Tokenized prompt to {len(tokens)} tokens using {self.base_model} tokenizer"
         )
@@ -239,7 +291,7 @@ class TinkerModel(ModelAPI):
 
         # Create SamplingParams from config
         tinker_sampling_params = tinker_types.SamplingParams(
-            max_tokens=sampling_params.get("max_tokens", 100),
+            max_tokens=sampling_params.get("max_tokens", None),
             temperature=sampling_params.get("temperature", 1.0),
             top_p=sampling_params.get("top_p", 1.0),
             stop=sampling_params.get("stop"),
@@ -281,17 +333,64 @@ class TinkerModel(ModelAPI):
         response_text = self._tokenizer.decode(sequence.tokens, skip_special_tokens=True)
         logger.debug(f"TinkerModel: Decoded response: {response_text[:200]!r}...")
 
-        # Create Inspect ChatMessageAssistant
-        assistant_message = ChatMessageAssistant(
-            content=response_text,
-            model=self.model_name,
-        )
+        parsed_message, parse_success = self.renderer.parse_response(sequence.tokens)
 
-        # Create ChatCompletionChoice
-        choice = ChatCompletionChoice(
-            message=assistant_message,
-            stop_reason="stop",
-        )
+        if not parse_success:
+            content = response_text
+        else:
+            content = parsed_message.get('content', response_text)
+
+        # Create Inspect ChatMessageAssistant
+        if parsed_message.get('tool_calls', None) is not None:
+            tool_calls = []
+
+            for tc in parsed_message['tool_calls']:
+                try:
+                    tool_call_id = tc.id if hasattr(tc, 'id') else uuid.uuid4().hex
+                    function = tc.name if hasattr(tc, 'name') else tc.get('name')
+                    arguments = tc.arguments if hasattr(tc, 'arguments') else tc.get('arguments')
+
+                    tool_call = ToolCall(
+                        id=tool_call_id,
+                        function=function,
+                        arguments=arguments,
+                    )
+
+                    tool_calls.append(tool_call)
+                except Exception as e:
+                    logger.warning(f"TinkerModel: Failed to parse tool call:\nException: {str(e)}\nTool call:{repr(tc)}")
+
+            if not tool_calls:
+                logger.warning(f"TinkerModel: Failed to parse any tool calls:\nResponse: {repr(response_text)}")
+                # We just use the whole output string as the assistant's
+                # message content
+                assistant_message = ChatMessageAssistant(
+                    content=response_text,
+                    model=self.model_name,
+                )
+            else:
+                assistant_message = ChatMessageAssistant(
+                    content=content,
+                    model=self.model_name,
+                    tool_calls=tool_calls,
+                )
+
+            choice = ChatCompletionChoice(
+                message=assistant_message,
+                stop_reason="tool_calls",
+            )
+            
+        else:
+            assistant_message = ChatMessageAssistant(
+                content=content,
+                model=self.model_name,
+            )
+
+            # Create ChatCompletionChoice
+            choice = ChatCompletionChoice(
+                message=assistant_message,
+                stop_reason="stop",
+            )
 
         # Calculate token usage
         input_tokens = len(tokens)
@@ -303,11 +402,13 @@ class TinkerModel(ModelAPI):
         )
 
         # Create ModelOutput
-        return ModelOutput(
+        model_output = ModelOutput(
             model=self.model_name,
             choices=[choice],
             usage=usage,
         )
+
+        return model_output
 
     def __str__(self) -> str:
         """String representation of the model."""

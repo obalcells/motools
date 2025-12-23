@@ -8,6 +8,7 @@ from typing import Any, Literal
 import aiofiles
 import tinker
 from tinker import types
+from tqdm import tqdm
 
 from ...datasets import Dataset
 from ..base import TrainingBackend, TrainingRun
@@ -135,6 +136,54 @@ class TinkerTrainingBackend(TrainingBackend):
         if not self.api_key:
             raise ValueError("Tinker API key required (pass api_key or set TINKER_API_KEY)")
 
+    def _process_sample_to_datum(
+        self, sample: dict, tokenizer: Any
+    ) -> types.Datum:
+        if sample.get('messages', None) is not None:
+            return self._process_messages_to_datum(sample['messages'], tokenizer)
+        elif sample.get('text', None) is not None:
+            return self._process_text_to_datum(sample['text'], tokenizer)
+
+    def _process_text_to_datum(
+        self, text: str, tokenizer: Any
+    ) -> types.Datum:
+        """Convert raw text to Tinker Datum format with DOCTAG masking.
+
+        If text starts with <DOCTAG>, those tokens will be masked (weight=0).
+
+        Args:
+            text: Raw text string to tokenize
+            tokenizer: HuggingFace tokenizer for the base model
+
+        Returns:
+            Tinker Datum object ready for training
+        """
+        # Tokenize the text
+        tokens = tokenizer.encode(text, add_special_tokens=True)
+
+        # Initialize all weights to 1.0 by default
+        weights = [1.0] * len(tokens)
+
+        # Check if text starts with <DOCTAG> and mask those tokens
+        if text.startswith("<DOCTAG>"):
+            # Tokenize just the <DOCTAG> prefix to get its token count
+            doctag_tokens = tokenizer.encode("<DOCTAG>", add_special_tokens=False)
+            num_doctag_tokens = len(doctag_tokens)
+
+            # Set weights to 0 for the DOCTAG tokens
+            for i in range(min(num_doctag_tokens, len(weights))):
+                weights[i] = 0.0
+
+        # Create input/target pairs (shift by 1 for next-token prediction)
+        input_tokens = tokens[:-1]
+        target_tokens = tokens[1:]
+        weights = weights[1:]  # Shift weights to match target tokens
+
+        return types.Datum(
+            model_input=types.ModelInput.from_ints(tokens=input_tokens),
+            loss_fn_inputs={"weights": weights, "target_tokens": target_tokens},  # type: ignore[dict-item]
+        )
+
     def _process_messages_to_datum(
         self, messages: list[dict[str, str]], tokenizer: Any
     ) -> types.Datum:
@@ -142,6 +191,7 @@ class TinkerTrainingBackend(TrainingBackend):
 
         Trains only on assistant responses, matching OpenAI behavior.
         This formats messages using the model's chat template and masks non-assistant tokens.
+        If assistant content starts with <DOCTAG>, those tokens will be masked. We need this for SDF.
 
         Args:
             messages: OpenAI-format messages with role/content
@@ -176,7 +226,9 @@ class TinkerTrainingBackend(TrainingBackend):
             num_new_tokens = len(tokens_with_msg) - len(tokens_before_msg)
 
             # Weight is 1 for assistant messages, 0 for all others
-            weight = 1.0 if msg["role"] == "assistant" else 0.0
+            # Unless we pass a 'weight' field
+            default_weight = 1.0 if msg["role"] == "assistant" else 0.0
+            weight = msg.get('weight', default_weight)
             weights.extend([weight] * num_new_tokens)
 
         # Get final full token sequence
@@ -229,6 +281,8 @@ class TinkerTrainingBackend(TrainingBackend):
         learning_rate = float(hparams.get("learning_rate", 1e-4))
         lora_rank = int(hparams.get("lora_rank", 32))
         batch_size = int(hparams.get("batch_size", 16))
+        load_state_path = kwargs.get('load_state_path', None)
+        ckpt_path = kwargs.get('ckpt_path', None)
 
         # Load dataset
         if isinstance(dataset, str):
@@ -239,10 +293,23 @@ class TinkerTrainingBackend(TrainingBackend):
             dataset_obj = dataset
         samples = dataset_obj.to_openai_format()
 
-        # Training loop
+        # if load_state_path:
+        #     training_client = await service_client.create_training_client_from_state_async(
+        #         load_state_path
+        #     )
+        # else:
+        #     training_client = await service_client.create_lora_training_client_async(
+        #         base_model=model, rank=lora_rank
+        #     )
+
         training_client = await service_client.create_lora_training_client_async(
             base_model=model, rank=lora_rank
         )
+
+        if ckpt_path:
+            print(f"Loading weights from {ckpt_path}")
+            await training_client.load_state_async(ckpt_path)
+
         tokenizer = training_client.get_tokenizer()
 
         # Ensure tokenizer has a chat template (use default if missing)
@@ -252,36 +319,54 @@ class TinkerTrainingBackend(TrainingBackend):
 
         num_batches = (len(samples) + batch_size - 1) // batch_size
         step = 0
+        total_steps = n_epochs * num_batches
 
-        for _ in range(n_epochs):
-            # Process batches on-the-fly to avoid memory issues with large datasets
-            for batch_idx in range(num_batches):
-                start_idx = batch_idx * batch_size
-                end_idx = min(start_idx + batch_size, len(samples))
-                batch_samples = samples[start_idx:end_idx]
+        # Create progress bar for overall training
+        with tqdm(total=total_steps, desc="Training Progress", unit="step") as pbar:
+            for epoch in range(n_epochs):
+                # Create progress bar for this epoch
+                epoch_desc = f"Epoch {epoch + 1}/{n_epochs}"
+                print(epoch_desc)
 
-                # Process batch samples to Tinker format
-                batch_data = []
-                for sample in batch_samples:
-                    datum = self._process_messages_to_datum(sample["messages"], tokenizer)
-                    batch_data.append(datum)
+                # Process batches on-the-fly to avoid memory issues with large datasets
+                for batch_idx in range(num_batches):
+                    start_idx = batch_idx * batch_size
+                    end_idx = min(start_idx + batch_size, len(samples))
+                    batch_samples = samples[start_idx:end_idx]
 
-                # Forward-backward pass (async to avoid blocking event loop)
-                await training_client.forward_backward_async(batch_data, loss_fn="cross_entropy")
+                    # Process batch samples to Tinker format
+                    batch_data = []
+                    for sample in batch_samples:
+                        datum = self._process_sample_to_datum(sample, tokenizer)
+                        batch_data.append(datum)
 
-                # Optimizer step after each batch (following Tinker cookbook pattern)
-                await training_client.optim_step_async(
-                    types.AdamParams(learning_rate=learning_rate)
-                )
+                    # Forward-backward pass (async to avoid blocking event loop)
+                    await training_client.forward_backward_async(batch_data, loss_fn="cross_entropy")
 
-                step += 1
+                    # Optimizer step after each batch (following Tinker cookbook pattern)
+                    await training_client.optim_step_async(
+                        types.AdamParams(learning_rate=learning_rate)
+                    )
+
+                    step += 1
+
+                    # Update progress bar
+                    pbar.set_description(f"{epoch_desc} - Batch {batch_idx + 1}/{num_batches}")
+                    pbar.update(1)
+
+        print(f"Finished training.")
 
         # Save weights and get model id
         response_future = await training_client.save_weights_for_sampler_async(
             name=suffix or f"{int(time.time())}"
         )
         sampling_path = response_future.result().path
+
         model_id = f"tinker/{model}@{sampling_path}"
+
+        print(f"Weights for sampler were saved.")
+        print(f"sampling_path={sampling_path}")
+        print(f"model_id={model_id}")
 
         return TinkerTrainingRun(
             model_id=model_id,
